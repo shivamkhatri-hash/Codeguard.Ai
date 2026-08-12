@@ -25,9 +25,9 @@ function highlightCode(code, language) {
   return Prism.highlight(code || " ", grammar, langKey);
 }
 
-export default function CodeEditor({ code, language, onChange, disabled }) {
+export default function CodeEditor({ code, language, onChange, disabled, fileName }) {
   const currentLang = language || "python";
-  const displayFile = FILE_NAMES[currentLang] || "source_code.txt";
+  const displayFile = fileName || FILE_NAMES[currentLang] || "source_code.txt";
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-700/80 bg-[#07101c] shadow-2xl">

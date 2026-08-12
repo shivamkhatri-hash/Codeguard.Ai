@@ -1,0 +1,53 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  background: #050b14;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(14, 165, 233, .13), transparent 28%),
+    radial-gradient(circle at 85% 0%, rgba(99, 102, 241, .12), transparent 25%),
+    #050b14;
+  color: #e5edf7;
+}
+
+button, input, textarea { font: inherit; }
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: #09111e; }
+::-webkit-scrollbar-thumb { background: #26364a; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #39516d; }
+
+.code-editor textarea {
+  outline: none !important;
+  caret-color: #67e8f9;
+}
+
+.code-editor pre {
+  margin: 0 !important;
+  white-space: pre !important;
+}
+
+.glass {
+  background: rgba(9, 18, 31, .76);
+  border: 1px solid rgba(148, 163, 184, .12);
+  backdrop-filter: blur(18px);
+}
+
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, .035) 1px, transparent 1px);
+  background-size: 28px 28px;
+}

@@ -108,22 +108,32 @@ class CodeValidatorService:
                 ]
             }
         except javalang.tokenizer.LexerError as e:
+            msg = str(e)
+            line_no = 1
+            match = re.search(r"line (\d+)", msg)
+            if match:
+                line_no = int(match.group(1))
             return {
                 "syntax_valid": False,
                 "errors": [
                     {
-                        "line": 1,
-                        "message": str(e) or "Lexical error"
+                        "line": line_no,
+                        "message": msg or "Lexical error"
                     }
                 ]
             }
         except Exception as e:
+            msg = str(e)
+            line_no = 1
+            match = re.search(r"line (\d+)", msg)
+            if match:
+                line_no = int(match.group(1))
             return {
                 "syntax_valid": False,
                 "errors": [
                     {
-                        "line": 1,
-                        "message": f"Java parser error: {str(e)}"
+                        "line": line_no,
+                        "message": f"Java parser error: {msg}"
                     }
                 ]
             }

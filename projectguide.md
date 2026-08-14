@@ -1,6 +1,6 @@
-# Milestone 1 Completion Details & System Architecture
+# Project Guide: Smart Code Inspection Platform with Vulnerability Detection System
 
-This document details the completed components under **Milestone 1** of the **Smart Code Inspection Platform with Vulnerability Detection System**.
+This document provides a comprehensive overview of the system architecture, directory structures, functional modules, and installation guidelines for developers working on this project.
 
 ---
 
@@ -35,6 +35,33 @@ graph TD
 
 ---
 
+## 📁 Repository Directory Structure
+
+```text
+├── infy/
+│   ├── BackEnd/
+│   │   ├── app/
+│   │   │   ├── api/          # API routers (endpoints)
+│   │   │   ├── core/         # Settings, config, and RAG knowledge documents
+│   │   │   ├── schemas/      # Pydantic data schemas
+│   │   │   ├── services/     # Validator, RAG, analysis, and storage services
+│   │   │   └── main.py       # FastAPI application entrypoint
+│   │   └── README.md
+│   └── FrontEnd/
+│       ├── src/
+│       │   ├── components/   # Shared UI components (Editor, Upload, ResultCard)
+│       │   ├── pages/        # Core page views (CodeReview)
+│       │   ├── services/     # API request handlers
+│       │   └── types/        # Type configurations and defaults
+│       ├── package.json
+│       ├── vite.config.js
+│       └── README.md
+├── README.md                 # Main user instructions
+└── projectguide.md           # This developer guide
+```
+
+---
+
 ## 🛠️ Installation & Setup Commands
 
 To set up the platform on your local machine, run the following command sequence:
@@ -50,6 +77,7 @@ pip install fastapi uvicorn pydantic scikit-learn numpy javalang
 # Start the server
 python -m uvicorn app.main:app --port 8000
 ```
+*API Swagger interactive documentation is available at `http://127.0.0.1:8000/docs`.*
 
 ### 2. Frontend Portal Setup
 ```bash
@@ -62,4 +90,13 @@ npm install
 # Start development site
 npm run dev
 ```
-*Make sure to verify that the `.env` file containing `VITE_API_BASE_URL=http://localhost:8000` exists in the `FrontEnd` directory.*
+*The web interface will be accessible at: `http://localhost:5173/`.*
+
+---
+
+## 🔍 API Endpoints Reference
+
+### Code Validation Endpoints
+* **`POST /api/code/submit`**: Submit code snippet as a JSON request body.
+* **`POST /api/code/upload`**: Upload code file as form-data.
+* **`GET /api/analysis/{analysis_id}`**: Fetch historical code analysis reports by unique ID.

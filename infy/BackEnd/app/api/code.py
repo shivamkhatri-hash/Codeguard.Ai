@@ -6,14 +6,14 @@ from app.schemas.code import CodeSubmitRequest, CodeSubmitResponse
 from app.services.code_validator import code_validator_service
 from app.services.file_service import file_service
 from app.services.storage_service import storage_service
-from app.services.code_analysis_service import code_analysis_service
+from app.services.agent_orchestrator import agent_orchestrator
 
 
 router = APIRouter(prefix="/code", tags=["code"])
 
 
 @router.post("/submit", response_model=CodeSubmitResponse)
-def submit_code(payload: CodeSubmitRequest):
+async def submit_code(payload: CodeSubmitRequest):
     """
     Submits source code directly in a JSON body.
 
@@ -43,10 +43,10 @@ def submit_code(payload: CodeSubmitRequest):
     analysis_findings = None
 
     if syntax_result["syntax_valid"]:
-        analysis_findings = code_analysis_service.analyze_code(
-            payload.code,
-            payload.language
-        )
+        analysis_findings = await agent_orchestrator.analyze(
+    payload.code,
+    payload.language
+)
 
     # Generate unique analysis ID
     analysis_id = storage_service.generate_id()
@@ -135,10 +135,10 @@ async def upload_code(file: UploadFile = File(...)):
     analysis_findings = None
 
     if syntax_result["syntax_valid"]:
-        analysis_findings = code_analysis_service.analyze_code(
-            code,
-            language
-        )
+        analysis_findings = await agent_orchestrator.analyze(
+    code,
+    language
+)
 
     # Generate unique analysis ID
     analysis_id = storage_service.generate_id()

@@ -51,9 +51,3 @@ button, input, textarea { font: inherit; }
     linear-gradient(90deg, rgba(148, 163, 184, .035) 1px, transparent 1px);
   background-size: 28px 28px;
 }
-@keyframes soft-pulse {
-  0%, 100% { opacity: .65; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.02); }
-}
-
-.soft-pulse { animation: soft-pulse 3s ease-in-out infinite; }

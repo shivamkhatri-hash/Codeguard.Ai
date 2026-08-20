@@ -4,11 +4,15 @@ An AI-powered multi-agent platform for automated code review, security vulnerabi
 
 ---
 
-## 🚀 Project Status: Milestone 1 Completed
+## 🚀 Project Status: Milestone 2 Completed
 
-### Features Delivered in Milestone 1:
+### Features Delivered in Milestone 1 & 2:
 * **Code Submission Module**: Support for pasting code snippets directly or uploading source files for both Python and Java.
 * **Syntax Validation**: Backend validation checks utilizing Python `ast` parsing and Java `javalang` parsing (supporting full class files and raw method snippets).
+* **Code Analysis Agent**: Analyzes code quality metrics, docstring coverage, function parameters, and cognitive complexity.
+* **Security Vulnerability Agent**: Scans for OWASP Top 10 risks including SQL Injection, shell command execution, secrets leakage, and DOM-based Cross-Site Scripting (XSS).
+* **Developer Portal Dashboard**: Interactive dashboard showcasing code quality health scores, issue breakdowns, recent analyses, and navigation routes.
+* **Orchestration & Validation**: Assembles security and quality reports, alongside a comprehensive python verification test suite ([`test_milestone2.py`](file:///e:/Downloads/Smart%20code%20analysis/Geetha123-hue-Repo_Sample-dabb06d/infy/BackEnd/test_milestone2.py)).
 * **RAG Secure Coding Knowledge Base**: In-memory retrieval system indexing secure coding standards, OWASP guidelines, and prevention recommendations using TF-IDF and Cosine Similarity vector indexing.
 
 ---

@@ -9,29 +9,30 @@ This document provides a comprehensive overview of the system architecture, dire
 ```mermaid
 graph TD
     Client[React Frontend - Port 5173] -->|API Request| Backend[FastAPI Backend - Port 8000]
-    Backend -->|1. Code Submission| CodeValidator[Code Validator Service]
-    Backend -->|2. RAG Context| RAGService[RAG Service]
-    RAGService -->|Retrieve Guidelines| RAGKB[RAG Knowledge Base]
+    Backend -->|1. Submit / Upload| API[FastAPI router /submit]
+    API -->|2. Orchestrate| Orchestrator[Analysis Service Orchestrator]
+    Orchestrator -->|Parallel quality check| CodeAnalysis[Code Analysis Agent]
+    Orchestrator -->|Parallel security check| SecurityAnalysis[Security Vulnerability Agent]
+    CodeAnalysis & SecurityAnalysis -->|3. Retrieve Recommendations| RAGService[RAG Service]
+    RAGService -->|Lookup guidelines| RAGKB[RAG Knowledge Base]
 ```
 
-### 1. Code Submission Module
+### 1. Code Submission & UI Module
 * **Frontend Components**:
-  * `CodeEditor.jsx`: Integrated simple code editor supporting raw copy-pasting, custom theme styles, syntax coloring options, and line numbering.
-  * `FileUpload.jsx`: Implemented drag-and-drop file selector supporting custom code extensions (`.py`, `.java`, `.js`, `.ts`, `.cpp`, `.go`, `.html`).
-  * `LanguageSelector.jsx`: Dropdown control specifying the code context for validation.
+  * `Dashboard.jsx`: Analytics overview showing recent code inspection scores, metrics (LOC, classes count), and quick navigation action items.
+  * `Navbar.jsx`: Central header directing pages navigation routes.
+  * `CodeReview.jsx` & `CodeEditor.jsx`: Simple code editor supporting raw copy-pasting, custom theme styling, syntax coloring, and live line numbering.
+  * `FileUpload.jsx`: File upload supporting code source extensions (`.py`, `.java`, `.js`, `.ts`, `.cpp`, `.go`, `.html`).
+  * `AnalysisProgress.jsx`: Multi-stage active loading visualizer reporting current agent state.
 * **API Connection**:
   * Calls `POST /api/code/submit` for direct submissions.
   * Calls `POST /api/code/upload` for file uploads.
 
-### 2. Syntax Validation Engine
-* Located at `BackEnd/app/services/code_validator.py`.
-* **Python**: Parses code to Abstract Syntax Tree (AST) node representations using python standard `ast.parse`.
-* **Java**: Utilizes tokenizing and parsing library `javalang`. Features a robust snippet wrapper (`_validate_java_snippet`) allowing developers to test partial blocks or single Java methods without requiring full class structures.
-* **Brackets / Quotes Balancer**: Fallback parser validating matched bracket pairs `()`, `[]`, `{}`, and checking for unterminated string literals in dynamically typed languages.
-
-### 3. RAG Knowledge Base & Context Pipeline
-* **Knowledge Index**: Contained within `BackEnd/app/core/rag_kb.py`, indexing detailed secure coding practices mapped to OWASP categories (SQLi, Command Injection, XSS, CSRF, Cryptographic Failures, etc.).
-* **Search Mechanics**: Configured in `BackEnd/app/services/rag_service.py`. Standardizes text inputs, breaks documents down into paragraph-sized chunks, and uses `scikit-learn`'s `TfidfVectorizer` alongside `cosine_similarity` to retrieve context recommendations.
+### 2. Multi-Agent Analysis Pipeline
+* **Code Analysis Agent**: Evaluates structural metrics (parameters count, function length, docstring coverage) and cognitive code complexity.
+* **Security Vulnerability Agent**: Scans for OWASP Top 10 vulnerabilities (SQLi, Command Injection, XSS, insecure deserialization, hardcoded secrets, weak hashing).
+* **Parallel Orchestration**: Merges and deduplicates quality code smells and security warnings.
+* **RAG Context Pipeline**: Uses a local `scikit-learn` TF-IDF Vectorizer and `cosine_similarity` to retrieve context recommendations from the indexed RAG Knowledge Base (`rag_kb.py`).
 
 ---
 
@@ -46,16 +47,18 @@ graph TD
 │   │   │   ├── schemas/      # Pydantic data schemas
 │   │   │   ├── services/     # Validator, RAG, analysis, and storage services
 │   │   │   └── main.py       # FastAPI application entrypoint
+│   │   ├── test_milestone2.py # Automated test validation suite
 │   │   └── README.md
 │   └── FrontEnd/
 │       ├── src/
-│       │   ├── components/   # Shared UI components (Editor, Upload, ResultCard)
-│       │   ├── pages/        # Core page views (CodeReview)
+│       │   ├── components/   # Shared UI (Editor, Upload, ResultCard, Navbar, Progress)
+│       │   ├── pages/        # Core page views (CodeReview, Dashboard)
 │       │   ├── services/     # API request handlers
 │       │   └── types/        # Type configurations and defaults
 │       ├── package.json
 │       ├── vite.config.js
 │       └── README.md
+├── LICENSE                   # Open-source LICENSE placeholder
 ├── README.md                 # Main user instructions
 └── projectguide.md           # This developer guide
 ```
@@ -79,7 +82,16 @@ python -m uvicorn app.main:app --port 8000
 ```
 *API Swagger interactive documentation is available at `http://127.0.0.1:8000/docs`.*
 
-### 2. Frontend Portal Setup
+### 2. Run Validation Tests
+```bash
+# Navigate to Backend folder
+cd infy/BackEnd
+
+# Execute automated tests
+python test_milestone2.py
+```
+
+### 3. Frontend Portal Setup
 ```bash
 # Navigate to Frontend folder
 cd infy/FrontEnd

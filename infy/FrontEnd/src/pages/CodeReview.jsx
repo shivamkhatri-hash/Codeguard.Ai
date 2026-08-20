@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { ArrowRight, Check, CircleAlert, FileCode2, RotateCcw, Send, Sparkles, TerminalSquare } from "lucide-react";
+import { Check, CircleAlert, FileCode2, RotateCcw, Send, ShieldCheck, Sparkles } from "lucide-react";
 import CodeEditor from "../components/CodeEditor";
 import FileUpload from "../components/FileUpload";
 import LanguageSelector from "../components/LanguageSelector";
+import AnalysisProgress from "../components/AnalysisProgress";
 import ResultCard from "../components/ResultCard";
 import { DEFAULT_CODE } from "../types/analysis";
 import { submitCode } from "../services/api";
 
-export default function CodeReview() {
+
+export default function CodeReview({ onNavigate }) {
   const [language, setLanguage] = useState("");
   const [code, setCode] = useState("");
   const [fileName, setFileName] = useState("");
@@ -58,38 +60,26 @@ export default function CodeReview() {
 
   return (
     <div className="min-h-screen grid-bg">
-      <header className="border-b border-slate-800/70 bg-[#050b14]/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-600 text-slate-950 shadow-glow">
-              <TerminalSquare size={21} />
-            </div>
-            <div>
-              <p className="text-sm font-extrabold tracking-tight text-white">CodeGuard AI</p>
-              <p className="text-[11px] text-slate-500">Smart Code Inspection & Vulnerability Detection Platform</p>
-            </div>
-          </div>
 
-          <div className="hidden items-center gap-2 rounded-full border border-cyan-400/15 bg-cyan-400/5 px-3 py-1.5 text-xs text-cyan-200 sm:flex">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            Backend Connected (FastAPI)
-          </div>
-        </div>
-      </header>
 
       <main className="mx-auto max-w-7xl px-5 py-8 lg:px-8 lg:py-10">
-        <section className="mb-8 max-w-3xl">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-400/15 bg-indigo-400/5 px-3 py-1.5 text-xs font-medium text-indigo-200">
-            <Sparkles size={14} />
-            AI-Powered Code Inspection & Security Vulnerability Scanner
+        <section className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-400/15 bg-indigo-400/5 px-3 py-1.5 text-xs font-medium text-indigo-200">
+              <Sparkles size={14} />
+             AI-Powered Code Quality & Security Analysis
+            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              Review your code before it reaches production.
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
+              Analyze your source code for quality issues and OWASP security vulnerabilities. CodeGuard runs specialized agents in parallel and combines their findings into one unified report.
+            </p>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            Review your code before it reaches production.
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
-            Submit Python, Java, JavaScript, TypeScript, C++, Go, or HTML source code by pasting it into the editor or uploading a file.
-            The FastAPI backend validates syntax and scans for security vulnerabilities with AI RAG recommendations.
-          </p>
+          <div className="hidden shrink-0 items-center gap-2 rounded-xl border border-emerald-400/15 bg-emerald-400/5 px-3 py-2 text-xs text-emerald-200 lg:flex">
+            <ShieldCheck size={15} />
+            AI Analysis Pipeline Ready
+          </div>
         </section>
 
         <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
@@ -99,8 +89,8 @@ export default function CodeReview() {
                 <FileCode2 size={16} className="text-cyan-300" />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-white">Submission setup</h2>
-                <p className="text-xs text-slate-500">Choose your source</p>
+                <h2 className="text-sm font-bold text-white">Analysis configuration</h2>
+                <p className="text-xs text-slate-500">Choose language and source</p>
               </div>
             </div>
 
@@ -150,13 +140,12 @@ export default function CodeReview() {
                 setError("");
               }}
               disabled={loading}
-              fileName={fileName}
             />
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 {error ? <CircleAlert size={15} className="text-rose-300" /> : <Check size={15} className="text-emerald-300" />}
-                <span>{error || "Ready to validate your submission."}</span>
+                <span>{error || "Ready to analyze your source code."}</span>
               </div>
 
               <button
@@ -168,26 +157,41 @@ export default function CodeReview() {
                 {loading ? (
                   <>
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950/30 border-t-slate-950" />
-                    Submitting...
+                    Analyzing...
                   </>
                 ) : (
                   <>
-                    Analyze / Submit <Send size={16} className="transition group-hover:translate-x-0.5" />
+                    Analyze Code <Send size={16} className="transition group-hover:translate-x-0.5" />
                   </>
                 )}
               </button>
             </div>
 
             <div className="mt-6">
-              <ResultCard result={result} error={result ? "" : error && loading === false && code.trim() && language ? error : ""} />
-            </div>
+  {loading && (
+    <AnalysisProgress language={language} />
+  )}
+
+  {!loading && (
+    <ResultCard
+      result={result}
+      error={
+        result
+          ? ""
+          : error && loading === false && code.trim() && language
+            ? error
+            : ""
+      }
+    />
+  )}
+</div>
 
             {!result && !error && (
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 {[
-                  ["01", "Select language", "Python or Java"],
+                 ["01", "Select language", "Choose a language"],
                   ["02", "Add source", "Paste or upload"],
-                  ["03", "Submit", "Backend validates"]
+                 ["03", "Analyze", "Run quality + security agents"]
                 ].map(([number, title, desc]) => (
                   <div key={number} className="rounded-xl border border-slate-800 bg-slate-950/30 p-4">
                     <span className="font-mono text-xs text-cyan-300">{number}</span>
@@ -200,9 +204,11 @@ export default function CodeReview() {
           </section>
         </div>
 
-        <footer className="mt-10 border-t border-slate-800/70 pt-5 text-xs text-slate-600">
-          Initial milestone scope: code submission and syntax validation only. AI agents, vulnerability analysis,
-          RAG, reports, authentication, GitHub integration and dashboards are intentionally excluded from this phase.
+        <footer className="mt-10 flex flex-col gap-2 border-t border-slate-800/70 pt-5 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+          <span>Milestone 2 workspace • Code quality + security analysis</span>
+          <button type="button" onClick={() => onNavigate("dashboard")} className="text-slate-500 transition hover:text-cyan-300">
+            Back to dashboard
+          </button>
         </footer>
       </main>
     </div>

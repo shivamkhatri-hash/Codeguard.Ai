@@ -1,6 +1,6 @@
 # Project Guide: Smart Code Inspection Platform with Vulnerability Detection System
 
-This document provides a comprehensive overview of the system architecture, directory structures, functional modules, and installation guidelines for developers working on this project.
+This document provides a comprehensive developer guide covering system architecture, directory structure, multi-agent pipeline components, MongoDB Atlas cloud storage, JWT authentication, and native PDF report generation.
 
 ---
 
@@ -9,7 +9,9 @@ This document provides a comprehensive overview of the system architecture, dire
 ```mermaid
 graph TD
     Client[React Frontend - Port 5173] -->|API Request| Backend[FastAPI Backend - Port 8000]
-    Backend -->|1. Submit / Upload| API[FastAPI router /submit]
+    Backend -->|Auth & JWT| AuthRouter[Auth Router /api/auth]
+    Backend -->|Admin SOC| AdminRouter[Admin Router /api/admin]
+    Backend -->|1. Submit / Upload| API[FastAPI router /api/code]
     API -->|2. Orchestrate| Orchestrator[Agent Orchestrator]
     Orchestrator -->|Parallel Quality Scan| CodeAnalysis[Code Analysis Agent]
     Orchestrator -->|Parallel Security Scan| SecurityAnalysis[Security Vulnerability Agent]
@@ -19,36 +21,38 @@ graph TD
     Backend -->|5. PR Summary Request| PRSummaryAgent[PR Summary Agent]
     Backend -->|6. Chat Query| AssistantAgent[Conversational Assistant Agent]
     AssistantAgent -->|Retrieve Citations| RAGService
-    Backend -->|7. Storage & History| SQLite[(SQLite Database)]
+    Backend -->|7. PDF Export| PDFService[PDF Report Service ReportLab]
+    Backend -->|8. Cloud Storage| MongoDB[(MongoDB Atlas Cloud Cluster)]
+    MongoDB -->|Fallback| SQLite[(SQLite Database analyses.db)]
 ```
 
 ### 1. Code Submission & Developer Portal Module
 * **Frontend Components**:
-  * `Dashboard.jsx`: Analytics overview showing recent code inspection scores, metrics (LOC, classes count), and quick navigation action items.
-  * `Navbar.jsx`: Central header directing navigation between Dashboard, Analyze, and History views.
-  * `CodeReview.jsx` & `CodeEditor.jsx`: Simple code editor supporting raw copy-pasting, custom theme styling, syntax coloring, and live line numbering.
-  * `FileUpload.jsx`: File upload supporting code source extensions (`.py`, `.java`, `.js`, `.ts`, `.cpp`, `.go`, `.html`).
-  * `AnalysisProgress.jsx`: Multi-stage active loading visualizer reporting current agent state.
-  * `ResultCard.jsx`: Comprehensive findings display with severity badges, category filter tabs (All, Code Quality, Security), the interactive **Generate AI Remediation** view, and **PR Review Summary** card with 1-click GitHub markdown export.
-  * `ConversationalAssistant.jsx`: Interactive slide-out chat drawer providing developer Q&A grounded in the RAG Secure Coding knowledge base with citation previews.
-* **API Connection**:
-  * Calls `POST /api/code/submit` for direct submissions.
-  * Calls `POST /api/code/upload` for file uploads.
-  * Calls `POST /api/remediation/{analysis_id}` to generate AI-powered secure code fixes.
-  * Calls `GET /api/summary/{analysis_id}` to compile structured PR review summaries.
-  * Calls `POST /api/assistant/chat` for conversational Q&A.
-  * Calls `GET /api/analysis` to retrieve analysis history records.
-  * Calls `DELETE /api/analysis/{analysis_id}` to purge history records.
+  * `LandingPage.jsx`: High-converting landing page with Hero section, live code comparison card, 5-agent breakdown, and 3-step workflow.
+  * `Dashboard.jsx`: Live dynamic analytics overview calculating metrics directly from MongoDB Atlas (Total Analyses, Security Risks, Code Smells, Average Score).
+  * `AdminDashboard.jsx`: Security Operations Center (SOC) dashboard for user management (block/activate developers), vulnerability distribution charts, and global inspection audit logs.
+  * `Navbar.jsx`: Sticky header providing seamless navigation, active user status, and Sign In / Sign Out controls.
+  * `AuthModal.jsx`: Segmented modal for Sign In and Sign Up with eye password toggle, developer role enforcement, and demo quick-fill shortcuts.
+  * `CodeReview.jsx` & `CodeEditor.jsx`: Code editor supporting copy-pasting, custom theme styling, syntax coloring, and live line numbering.
+  * `AnalysisProgress.jsx`: Multi-stage active loading visualizer reporting current agent execution state.
+  * `ResultCard.jsx`: In-place tab switcher (*Findings & Issues*, *PR Review Summary*, *AI Remediation Roadmap*), zero-scrolling UX, **Download PDF Report** button, and 1-click Copy GitHub PR comment.
+  * `ConversationalAssistant.jsx`: Interactive slide-out chat drawer providing developer Q&A grounded in the RAG Secure Coding knowledge base with citation document previews.
+
+---
 
 ### 2. Multi-Agent Analysis & Remediation Pipeline (5 Core Agents)
 1. **Code Analysis Agent** (`code_analysis_agent.py`): Evaluates structural metrics (parameters count, function length, docstring coverage) and cognitive code complexity.
-2. **Security Vulnerability Agent** (`security_vulnerability_agent.py`): Scans for OWASP Top 10 vulnerabilities (SQLi, Command Injection, XSS, insecure deserialization, hardcoded secrets, weak hashing).
-3. **Remediation Agent** (`remediation_agent.py`): Generates finding-specific security and code quality fixes with side-by-side corrected code snippets, explanations, and refactoring tips. Backed by Gemini LLM with instant deterministic RAG fallback.
+2. **Security Vulnerability Agent** (`security_vulnerability_agent.py`): Scans AST syntax trees for OWASP Top 10 vulnerabilities (SQLi, Command Injection, XSS, insecure deserialization, hardcoded secrets, weak hashing).
+3. **Remediation Agent** (`remediation_agent.py`): Generates finding-specific security and code quality fixes with side-by-side corrected code snippets, explanations, and refactoring tips (`gemini-2.5-flash`).
 4. **PR Summary Agent** (`pr_summary_agent.py`): Compiles all agent findings into a structured, PR-style review summary with executive overview, severity breakdown, Code Health Score (0-100), prioritized fix roadmap, and GitHub-ready markdown.
 5. **Conversational Code Assistant Agent** (`assistant_agent.py`): RAG-powered Q&A grounded in secure coding knowledge base for follow-up queries, vulnerability explanations, and deeper guidance.
-* **Agent Orchestrator** (`agent_orchestrator.py`): Executes quality and security agents concurrently using `asyncio.gather` and deduplicates results.
-* **Persistent SQLite Storage** (`storage_service.py`): Automatically stores analyses and remediations in a local SQLite database (`data/analyses.db`).
-* **RAG Context Pipeline** (`rag_service.py`): Uses TF-IDF Vectorization and cosine similarity to retrieve context recommendations from the indexed RAG Knowledge Base (`rag_kb.py`).
+
+---
+
+### 3. Native PDF Engine, Cloud Storage & Auth Services
+* **Native PDF Engine** (`pdf_report_service.py` & `app/api/report.py`): Programmatic PDF generation engine built using ReportLab. Streams multi-page PDF inspection reports with branding, Health Score gauge, verdict, severity table, fix roadmap, and refactored code.
+* **MongoDB Atlas Cloud Database** (`mongodb_storage_service.py`): Primary cloud database integration connecting to MongoDB Atlas cluster (`smartcodeinspection`) with multi-collection document storage (`users`, `analyses`, `remediations`) and SQLite local fallback (`storage_service.py`).
+* **JWT Security & Auth** (`security.py`, `auth.py`, `admin.py`): HMAC-SHA256 JWT token generation, SHA-256 password hashing, user registration, and Admin role-based access control (RBAC).
 
 ---
 
@@ -58,25 +62,29 @@ graph TD
 ├── infy/
 │   ├── BackEnd/
 │   │   ├── app/
-│   │   │   ├── api/          # API routers (/code, /analysis, /remediation, /summary, /assistant)
-│   │   │   ├── core/         # Settings, config, and RAG knowledge documents
-│   │   │   ├── schemas/      # Pydantic schemas (code, analysis, remediation, summary, assistant)
+│   │   │   ├── api/          # Routers (/code, /analysis, /remediation, /summary, /assistant, /report, /auth, /admin)
+│   │   │   ├── core/         # Settings, config, JWT security, and RAG knowledge documents
+│   │   │   ├── schemas/      # Pydantic schemas (code, analysis, remediation, summary, assistant, auth)
 │   │   │   ├── services/     # Core services and multi-agent pipeline
 │   │   │   │   ├── agents/   # CodeAnalysis, Security, Remediation, PRSummary, Assistant
 │   │   │   │   ├── agent_orchestrator.py
 │   │   │   │   ├── code_validator.py
+│   │   │   │   ├── mongodb_storage_service.py
+│   │   │   │   ├── pdf_report_service.py
 │   │   │   │   ├── rag_service.py
 │   │   │   │   └── storage_service.py
 │   │   │   └── main.py       # FastAPI application entrypoint
 │   │   ├── data/             # Local SQLite database (analyses.db)
 │   │   ├── test_milestone2.py # Automated detection validation suite
-│   │   ├── test_milestone3.py # Multi-agent suite validation (Remediation, PR Summary, Chat)
-│   │   ├── test_remediation.py# Remediation agent validation script
+│   │   ├── test_milestone3.py # Multi-agent suite validation
+│   │   ├── test_milestone4.py # PDF export & 3-sample E2E validation suite
+│   │   ├── test_auth_admin.py # Auth & Admin SOC test suite
+│   │   ├── test_mongodb.py   # MongoDB Atlas connection test suite
 │   │   └── README.md
 │   └── FrontEnd/
 │       ├── src/
-│       │   ├── components/   # UI (Editor, Upload, ResultCard, Navbar, Progress, ConversationalAssistant)
-│       │   ├── pages/        # Page views (CodeReview, Dashboard)
+│       │   ├── components/   # UI (Editor, Upload, ResultCard, Navbar, AuthModal, Progress, ConversationalAssistant)
+│       │   ├── pages/        # Page views (LandingPage, CodeReview, Dashboard, AdminDashboard)
 │       │   ├── services/     # API request handlers (api.js)
 │       │   └── types/        # Type configurations and defaults
 │       ├── package.json
@@ -89,57 +97,24 @@ graph TD
 
 ---
 
-## 🛠️ Installation & Setup Commands
+## 🔍 Complete API Endpoints Reference
 
-To set up the platform on your local machine, run the following command sequence:
-
-### 1. Backend Server Setup
-```bash
-# Navigate to Backend folder
-cd infy/BackEnd
-
-# Install required dependencies
-pip install fastapi uvicorn pydantic scikit-learn numpy javalang google-genai python-dotenv
-
-# Start the server
-python -m uvicorn app.main:app --port 8000
-```
-*API Swagger interactive documentation is available at `http://127.0.0.1:8000/docs`.*
-
-### 2. Run Validation Tests
-```bash
-# Navigate to Backend folder
-cd infy/BackEnd
-
-# Execute automated tests
-python test_milestone2.py
-python test_milestone3.py
-python test_remediation.py
-```
-
-### 3. Frontend Portal Setup
-```bash
-# Navigate to Frontend folder
-cd infy/FrontEnd
-
-# Install package dependencies
-npm install
-
-# Start development site
-npm run dev
-```
-*The web interface will be accessible at: `http://localhost:5173/`.*
-
----
-
-## 🔍 API Endpoints Reference
-
-### Code Validation & Analysis Endpoints
+### Code Inspection & PDF Report Endpoints
 * **`POST /api/code/submit`**: Submit code snippet as a JSON request body.
-* **`POST /api/code/upload`**: Upload code file as form-data.
+* **`POST /api/code/upload`**: Upload code file as form-data (`.py`, `.java`).
 * **`GET /api/analysis`**: List historical code analysis records.
 * **`GET /api/analysis/{analysis_id}`**: Fetch detailed code analysis report by ID.
 * **`DELETE /api/analysis/{analysis_id}`**: Delete an analysis record.
 * **`POST /api/remediation/{analysis_id}`**: Generate or retrieve AI-powered remediations with corrected code.
 * **`GET /api/summary/{analysis_id}`**: Generate structured Pull Request review summary with Health Score.
 * **`POST /api/assistant/chat`**: Conversational Code Assistant Q&A grounded in RAG knowledge base.
+* **`GET /api/report/pdf/{analysis_id}`**: Stream binary PDF inspection report file (`application/pdf`).
+* **`POST /api/report/pdf/generate`**: Stream binary PDF report from JSON payload.
+
+### Authentication & Admin Endpoints
+* **`POST /api/auth/signup`**: Register a developer user account.
+* **`POST /api/auth/login`**: Authenticate email/password and receive JWT session token.
+* **`GET /api/auth/me`**: Validate active JWT session token.
+* **`GET /api/admin/users`**: List all registered user accounts (Admin only).
+* **`POST /api/admin/users/{user_id}/status`**: Toggle user active/blocked status (Admin only).
+* **`GET /api/admin/stats`**: Retrieve platform-wide security analytics & audit logs (Admin only).

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, CircleAlert, FileCode2, RotateCcw, Send, ShieldCheck, Sparkles } from "lucide-react";
 import CodeEditor from "../components/CodeEditor";
 import FileUpload from "../components/FileUpload";
@@ -9,13 +9,29 @@ import { DEFAULT_CODE } from "../types/analysis";
 import { submitCode } from "../services/api";
 
 
-export default function CodeReview({ onNavigate }) {
-  const [language, setLanguage] = useState("");
-  const [code, setCode] = useState("");
-  const [fileName, setFileName] = useState("");
+export default function CodeReview({ onNavigate, initialAnalysis }) {
+  const [language, setLanguage] = useState(initialAnalysis?.language || "python");
+  const [code, setCode] = useState(initialAnalysis?.code || "");
+  const [fileName, setFileName] = useState(initialAnalysis?.filename || "");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState(initialAnalysis || null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (initialAnalysis) {
+      setLanguage(initialAnalysis.language || "python");
+      setCode(initialAnalysis.code || "");
+      setFileName(initialAnalysis.filename || "");
+      setResult(initialAnalysis);
+      setError("");
+    } else {
+      setLanguage("python");
+      setCode("");
+      setFileName("");
+      setResult(null);
+      setError("");
+    }
+  }, [initialAnalysis]);
 
   const changeLanguage = (value) => {
     setLanguage(value);
@@ -49,7 +65,7 @@ export default function CodeReview({ onNavigate }) {
     setResult(null);
 
     try {
-      const data = await submitCode({ language, code });
+      const data = await submitCode({ language, code, filename: fileName });
       setResult(data);
     } catch (err) {
       setError(err.message || "Unable to submit code. Please check your backend.");
@@ -134,6 +150,7 @@ export default function CodeReview({ onNavigate }) {
             <CodeEditor
               code={code}
               language={language || "python"}
+              fileName={fileName}
               onChange={(value) => {
                 setCode(value);
                 setResult(null);
@@ -205,7 +222,7 @@ export default function CodeReview({ onNavigate }) {
         </div>
 
         <footer className="mt-10 flex flex-col gap-2 border-t border-slate-800/70 pt-5 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-          <span>Milestone 2 workspace • Code quality + security analysis</span>
+          <span>Interactive Code Inspection Workspace • Quality & OWASP Security Analysis</span>
           <button type="button" onClick={() => onNavigate("dashboard")} className="text-slate-500 transition hover:text-cyan-300">
             Back to dashboard
           </button>

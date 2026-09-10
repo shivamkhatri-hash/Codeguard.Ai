@@ -12,8 +12,11 @@ class Finding(BaseModel):
 
 class AnalysisStatusResponse(BaseModel):
     analysis_id: str = Field(..., description="Unique generated 8-character ID for analysis")
+    filename: Optional[str] = Field(None, description="Analyzed filename")
     status: str = Field(..., description="Current status: 'submitted', 'completed', or 'failed'")
     language: str = Field(..., description="Programming language of the code")
     syntax_valid: bool = Field(..., description="Flag indicating if the source code contains syntax errors")
+    code: Optional[str] = Field(None, description="Original analyzed source code")
     errors: Optional[List[Dict[str, Any]]] = Field(None, description="List of syntax error issues found")
     findings: Optional[List[Finding]] = Field(None, description="List of vulnerability and code quality findings")
+    created_at: Optional[str] = Field(None, description="Timestamp of analysis")

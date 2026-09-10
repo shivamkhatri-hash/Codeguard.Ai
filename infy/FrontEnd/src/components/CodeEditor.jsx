@@ -21,13 +21,18 @@ const FILE_NAMES = {
 
 function highlightCode(code, language) {
   const langKey = language === "html" ? "markup" : language;
-  const grammar = Prism.languages[langKey] || Prism.languages.plain;
-  return Prism.highlight(code || " ", grammar, langKey);
+  const grammar = Prism.languages[langKey] || Prism.languages.markup || Prism.languages.javascript;
+  try {
+    return Prism.highlight(code || " ", grammar, langKey);
+  } catch {
+    return (code || " ").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
 }
 
-export default function CodeEditor({ code, language, onChange, disabled }) {
+export default function CodeEditor({ code = "", language, fileName, onChange, disabled }) {
+  const safeCode = code || "";
   const currentLang = language || "python";
-  const displayFile = FILE_NAMES[currentLang] || "source_code.txt";
+  const displayFile = fileName || FILE_NAMES[currentLang] || "source_code.txt";
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-700/80 bg-[#07101c] shadow-2xl">
@@ -47,14 +52,14 @@ export default function CodeEditor({ code, language, onChange, disabled }) {
 
       <div className="flex min-h-[430px] overflow-auto">
         <div className="select-none border-r border-slate-800/80 bg-slate-950/40 px-4 py-5 text-right font-mono text-xs leading-6 text-slate-600">
-          {Array.from({ length: Math.max(code.split("\n").length, 1) }, (_, i) => (
+          {Array.from({ length: Math.max(safeCode.split("\n").length, 1) }, (_, i) => (
             <div key={i}>{i + 1}</div>
           ))}
         </div>
 
         <div className="code-editor min-w-0 flex-1 font-mono text-[13px] leading-6">
           <Editor
-            value={code}
+            value={safeCode}
             onValueChange={onChange}
             highlight={(value) => highlightCode(value, currentLang)}
             padding={20}

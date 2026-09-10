@@ -14,12 +14,20 @@ class CodeSubmitRequest(BaseModel):
         ...,
         description="Raw source code content"
     )
+    filename: Optional[str] = Field(
+        None,
+        description="Original source filename (e.g. '0209.py')"
+    )
 
 
 class CodeSubmitResponse(BaseModel):
     analysis_id: str = Field(
         ...,
         description="Unique generated 8-character ID for analysis"
+    )
+    filename: Optional[str] = Field(
+        None,
+        description="Filename analyzed"
     )
     status: str = Field(
         ...,

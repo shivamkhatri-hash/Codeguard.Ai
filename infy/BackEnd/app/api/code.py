@@ -52,8 +52,10 @@ async def submit_code(payload: CodeSubmitRequest):
     analysis_id = storage_service.generate_id()
 
     # Save validation state + findings to memory storage
+    filename = payload.filename or ("main." + ("py" if payload.language.lower() == "python" else "java"))
     analysis_data = {
         "analysis_id": analysis_id,
+        "filename": filename,
         "status": (
             "completed"
             if syntax_result["syntax_valid"]
@@ -78,6 +80,7 @@ async def submit_code(payload: CodeSubmitRequest):
     # Return validation + code analysis results
     return CodeSubmitResponse(
         analysis_id=analysis_id,
+        filename=filename,
         status=analysis_data["status"],
         language=analysis_data["language"],
         syntax_valid=analysis_data["syntax_valid"],
@@ -136,16 +139,18 @@ async def upload_code(file: UploadFile = File(...)):
 
     if syntax_result["syntax_valid"]:
         analysis_findings = await agent_orchestrator.analyze(
-    code,
-    language
-)
+            code,
+            language
+        )
 
     # Generate unique analysis ID
     analysis_id = storage_service.generate_id()
+    filename = file.filename or ("uploaded." + ("py" if language == "python" else "java"))
 
     # Save validation state to memory
     analysis_data = {
         "analysis_id": analysis_id,
+        "filename": filename,
         "status": (
             "completed"
             if syntax_result["syntax_valid"]
@@ -169,6 +174,7 @@ async def upload_code(file: UploadFile = File(...)):
 
     return CodeSubmitResponse(
         analysis_id=analysis_id,
+        filename=filename,
         status=analysis_data["status"],
         language=analysis_data["language"],
         syntax_valid=analysis_data["syntax_valid"],

@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./infy/BackEnd
+      dockerfile: Dockerfile
+    container_name: smart_code_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URI=mongodb+srv://cricketinfo243_db_user:YlIhnEouxCENqi3K@smartcodeinspection.ku3jwwj.mongodb.net/?appName=Smartcodeinspection
+      - CORS_ORIGINS=http://localhost:5173,http://localhost:80,http://127.0.0.1:80
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    restart: always
+
+  frontend:
+    build:
+      context: ./infy/FrontEnd
+      dockerfile: Dockerfile
+    container_name: smart_code_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always

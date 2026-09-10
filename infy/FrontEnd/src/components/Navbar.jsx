@@ -1,18 +1,23 @@
-import { BarChart3, Clock3, Code2, ShieldCheck, TerminalSquare } from "lucide-react";
+import { Home, BarChart3, Clock3, Code2, ShieldCheck, TerminalSquare, ShieldAlert, User, LogIn, LogOut } from "lucide-react";
 
-const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-  { id: "analyze", label: "Analyze", icon: Code2 },
-  { id: "history", label: "History", icon: Clock3 }
-];
+export default function Navbar({ activePage, onNavigate, authUser, onOpenAuth, onLogout }) {
+  const navItems = [
+    { id: "landing", label: "Home", icon: Home },
+    { id: "dashboard", label: "Dashboard", icon: BarChart3 },
+    { id: "analyze", label: "Analyze", icon: Code2 },
+    { id: "history", label: "History", icon: Clock3 }
+  ];
 
-export default function Navbar({ activePage, onNavigate }) {
+  if (authUser?.role === "admin") {
+    navItems.push({ id: "admin", label: "Admin SOC", icon: ShieldAlert });
+  }
+
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800/70 bg-[#050b14]/85 backdrop-blur-2xl">
       <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 lg:px-8">
         <button
           type="button"
-          onClick={() => onNavigate("dashboard")}
+          onClick={() => onNavigate("landing")}
           className="group flex items-center gap-3 text-left"
         >
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-600 text-slate-950 shadow-glow transition duration-300 group-hover:scale-105">
@@ -25,7 +30,7 @@ export default function Navbar({ activePage, onNavigate }) {
         </button>
 
         <nav className="hidden items-center gap-1 rounded-xl border border-slate-800/80 bg-slate-950/40 p-1 md:flex">
-          {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+          {navItems.map(({ id, label, icon: Icon }) => {
             const active = activePage === id;
             return (
               <button
@@ -45,18 +50,45 @@ export default function Navbar({ activePage, onNavigate }) {
           })}
         </nav>
 
-        <div className="flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/5 px-3 py-1.5 text-[11px] font-medium text-emerald-200">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-          </span>
-          <span className="hidden sm:inline">System Online</span>
-          <ShieldCheck size={14} />
+        <div className="flex items-center gap-3">
+          {authUser ? (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-1.5 text-xs font-semibold text-slate-200">
+                <div className="grid h-6 w-6 place-items-center rounded-md bg-cyan-400/10 font-mono text-cyan-300">
+                  {authUser.full_name?.charAt(0) || "U"}
+                </div>
+                <div className="hidden sm:block text-left">
+                  <p className="text-xs font-bold text-white leading-none">{authUser.full_name}</p>
+                  <p className="text-[10px] text-cyan-400 uppercase font-mono leading-none mt-0.5">{authUser.role}</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={onLogout}
+                className="flex items-center gap-1 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs font-bold text-rose-300 hover:bg-rose-500/20 transition"
+                title="Sign Out"
+              >
+                <LogOut size={14} />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenAuth}
+              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-600 px-4 py-2 text-xs font-bold text-slate-950 shadow-glow transition hover:opacity-90"
+            >
+              <LogIn size={15} />
+              <span>Sign In / Sign Up</span>
+            </button>
+          )}
         </div>
       </div>
 
+      {/* Mobile nav bar */}
       <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-5 pb-2 md:hidden lg:px-8">
-        {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+        {navItems.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             type="button"

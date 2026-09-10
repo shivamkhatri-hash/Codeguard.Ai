@@ -10,7 +10,7 @@ from app.core.rag_kb import SECURE_CODING_DOCUMENTS
 
 class RAGService:
     def __init__(self):
-        self.vectorizer = TfidfVectorizer(stop_words="english")
+        self.vectorizer = TfidfVectorizer(ngram_range=(1, 2), stop_words="english", sublinear_tf=True)
         self.chunks: List[str] = []
         self.metadata: List[Dict[str, Any]] = []
         self.matrix = None

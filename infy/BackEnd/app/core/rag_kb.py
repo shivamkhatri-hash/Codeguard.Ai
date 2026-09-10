@@ -163,5 +163,45 @@ Prevention & Remediation Guidelines:
 3. Always HTML-encode variable values before rendering inside templates.
 4. Set up a strong Content Security Policy (CSP) header.
 """
+    },
+    {
+        "title": "Missing Docstrings and Code Documentation",
+        "category": "Code Quality",
+        "tags": ["docstring", "documentation", "missing docstring", "pep 257", "python", "java"],
+        "content": """
+Code Quality & Documentation Standard (PEP 257 / Javadoc): Public functions, classes, and modules should contain comprehensive docstrings to explain their intended purpose, parameter types, return contracts, and potential exceptions.
+
+Prevention & Remediation Guidelines:
+1. For Python: Add a multi-line docstring following PEP 257 standard describing arguments (Args:), return value (Returns:), and raised exceptions.
+2. For Java: Add Javadoc comments (`/** ... */`) with `@param`, `@return`, and `@throws` tags for all public methods.
+3. Keep docstrings synchronized with code changes to avoid stale documentation.
+"""
+    },
+    {
+        "title": "Mutable Default Arguments in Python",
+        "category": "Code Quality",
+        "tags": ["mutable default", "default argument", "list default", "dict default", "python"],
+        "content": """
+Python Code Quality: In Python, default parameter expressions (like `def foo(items=[])` or `def bar(config={})`) are evaluated only once when the function definition is loaded, NOT each time the function is called. Mutating the argument inside the function modifies the same shared object across all subsequent calls.
+
+Prevention & Remediation Guidelines:
+1. Always use `None` as the default sentinel value: `def process(items=None):`.
+2. Inside the function body, initialize a new container if None was passed: `if items is None: items = []`.
+3. Never use mutable objects (`[]`, `{}`, `set()`) directly in function parameter defaults.
+"""
+    },
+    {
+        "title": "Wildcard Imports Prevention",
+        "category": "Code Quality",
+        "tags": ["wildcard import", "import *", "namespace pollution", "python"],
+        "content": """
+Code Quality Standard (PEP 8): Using wildcard imports like `from module import *` pollutes the local namespace, obscures which module specific names originated from, and increases the risk of accidental name collisions and masking.
+
+Prevention & Remediation Guidelines:
+1. Explicitly import only the specific classes or functions required: `from module import FunctionA, ClassB`.
+2. Alternatively, import the module directly and access symbols via dot notation: `import module; module.FunctionA()`.
+3. Avoid wildcard imports in production codebases.
+"""
     }
 ]
+

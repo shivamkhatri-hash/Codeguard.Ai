@@ -18,11 +18,14 @@ def get_analysis_status(analysis_id: str):
         
     return AnalysisStatusResponse(
         analysis_id=analysis_data["analysis_id"],
+        filename=analysis_data.get("filename"),
         status=analysis_data["status"],
         language=analysis_data["language"],
         syntax_valid=analysis_data["syntax_valid"],
-        errors=analysis_data["errors"],
-        findings=analysis_data.get("findings")
+        code=analysis_data.get("code"),
+        errors=analysis_data.get("errors"),
+        findings=analysis_data.get("findings"),
+        created_at=analysis_data.get("created_at"),
     )
 
 
@@ -32,11 +35,14 @@ def list_analysis_history():
     return [
         AnalysisStatusResponse(
             analysis_id=item["analysis_id"],
+            filename=item.get("filename"),
             status=item["status"],
             language=item["language"],
             syntax_valid=item["syntax_valid"],
+            code=item.get("code"),
             errors=item.get("errors"),
             findings=item.get("findings"),
+            created_at=item.get("created_at"),
         )
         for item in storage_service.list_analyses()
     ]

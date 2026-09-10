@@ -4,6 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.code import router as code_router
 from app.api.analysis import router as analysis_router
+from app.api.remediation import router as remediation_router
+from app.api.summary import router as summary_router
+from app.api.assistant import router as assistant_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -34,6 +37,9 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Register endpoints under '/api' prefix
 app.include_router(code_router, prefix="/api")
 app.include_router(analysis_router, prefix="/api")
+app.include_router(remediation_router, prefix="/api")
+app.include_router(summary_router, prefix="/api")
+app.include_router(assistant_router, prefix="/api")
 
 @app.get("/")
 def read_root():

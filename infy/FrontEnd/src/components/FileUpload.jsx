@@ -1,6 +1,5 @@
 import { AlertCircle, CheckCircle2, FileCode2, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
-import { uploadCodeFile } from "../services/api";
 
 const ACCEPTED = [".py", ".java", ".js", ".ts", ".cpp", ".cc", ".h", ".go", ".html", ".htm"];
 
@@ -26,7 +25,6 @@ export default function FileUpload({ onCodeLoaded, onFileNameChange, onLanguageD
   const inputRef = useRef(null);
   const [fileName, setFileName] = useState("");
   const [message, setMessage] = useState("");
-  const [uploading, setUploading] = useState(false);
 
   const reset = () => {
     setFileName("");
@@ -54,15 +52,6 @@ export default function FileUpload({ onCodeLoaded, onFileNameChange, onLanguageD
       onLanguageDetected(detected);
       onCodeLoaded(code);
       setMessage("File loaded into the editor.");
-
-      setUploading(true);
-      try {
-        await uploadCodeFile(file);
-      } catch {
-        // Fallback to submit endpoint
-      } finally {
-        setUploading(false);
-      }
     } catch {
       setMessage("Could not read this file.");
     }
@@ -82,12 +71,12 @@ export default function FileUpload({ onCodeLoaded, onFileNameChange, onLanguageD
       <div className="flex items-center justify-between gap-3">
         <button
           type="button"
-          disabled={disabled || uploading}
+            disabled={disabled}
           onClick={() => inputRef.current?.click()}
           className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-slate-600 bg-slate-950/60 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-cyan-400/60 hover:bg-cyan-400/5 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Upload size={17} />
-          {uploading ? "Uploading..." : "Upload source file"}
+          Upload source file
         </button>
 
         {fileName && (

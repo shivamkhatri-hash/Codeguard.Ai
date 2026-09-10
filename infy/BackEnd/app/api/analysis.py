@@ -24,3 +24,29 @@ def get_analysis_status(analysis_id: str):
         errors=analysis_data["errors"],
         findings=analysis_data.get("findings")
     )
+
+
+@router.get("", response_model=list[AnalysisStatusResponse])
+def list_analysis_history():
+    """Returns the most recent saved analyses."""
+    return [
+        AnalysisStatusResponse(
+            analysis_id=item["analysis_id"],
+            status=item["status"],
+            language=item["language"],
+            syntax_valid=item["syntax_valid"],
+            errors=item.get("errors"),
+            findings=item.get("findings"),
+        )
+        for item in storage_service.list_analyses()
+    ]
+
+
+@router.delete("/{analysis_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_analysis(analysis_id: str):
+    """Deletes one saved analysis from history."""
+    if not storage_service.delete_analysis(analysis_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Analysis submission with ID '{analysis_id}' not found",
+        )

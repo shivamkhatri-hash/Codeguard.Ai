@@ -9,10 +9,18 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MONGODB_URI=mongodb+srv://cricketinfo243_db_user:YlIhnEouxCENqi3K@smartcodeinspection.ku3jwwj.mongodb.net/?appName=Smartcodeinspection
-      - CORS_ORIGINS=http://localhost:5173,http://localhost:80,http://127.0.0.1:80
+      - MONGODB_URI=${MONGODB_URI:-mongodb+srv://cricketinfo243_db_user:YlIhnEouxCENqi3K@smartcodeinspection.ku3jwwj.mongodb.net/?appName=Smartcodeinspection}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173,http://localhost:80,http://127.0.0.1:80,http://localhost:3000,*}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - backend_data:/app/data
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   frontend:
     build:
@@ -21,6 +29,12 @@ services:
     container_name: smart_code_frontend
     ports:
       - "80:80"
+      - "5173:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: always
+
+volumes:
+  backend_data:
+    driver: local

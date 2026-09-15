@@ -26,12 +26,19 @@ function formatDate(dateStr) {
   }
 }
 
-export default function Dashboard({ onNavigate, onSelectAnalysis }) {
+export default function Dashboard({ onNavigate, onSelectAnalysis, authUser, onOpenAuth }) {
   const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!authUser);
 
   useEffect(() => {
+    if (!authUser) {
+      setHistory([]);
+      setLoading(false);
+      return;
+    }
+
     let active = true;
+    setLoading(true);
     getAnalysisHistory()
       .then((data) => {
         if (active && Array.isArray(data)) {
@@ -46,7 +53,7 @@ export default function Dashboard({ onNavigate, onSelectAnalysis }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [authUser]);
 
   // Compute live aggregates from database records
   const totalAnalyses = history.length;
@@ -148,8 +155,21 @@ export default function Dashboard({ onNavigate, onSelectAnalysis }) {
                 <div className="p-8 text-center text-xs text-slate-500">Loading analysis activity...</div>
               )}
               {!loading && recentList.length === 0 && (
-                <div className="p-8 text-center text-xs text-slate-500">
-                  No analyses recorded yet. Click <strong>Start New Analysis</strong> above to inspect your first code file!
+                <div className="p-8 text-center text-xs text-slate-400 space-y-3">
+                  <p>
+                    {authUser
+                      ? "No analyses recorded yet. Click Start New Analysis above to inspect your first code file!"
+                      : "You are currently exploring in Guest mode. Sign in to save, sync, and track your code inspection history."}
+                  </p>
+                  {!authUser && onOpenAuth && (
+                    <button
+                      type="button"
+                      onClick={onOpenAuth}
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-300 to-blue-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-glow hover:brightness-110 transition"
+                    >
+                      Sign In / Sign Up
+                    </button>
+                  )}
                 </div>
               )}
               {!loading && recentList.map((item) => {

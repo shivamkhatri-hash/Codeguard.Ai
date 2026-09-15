@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, Send, Bot, User, Sparkles, X, BookOpen, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { MessageSquare, Send, Bot, User, Sparkles, X, BookOpen, Trash2, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
 import { sendChatMessage } from "../services/api";
 
 const SUGGESTED_PROMPTS = [
@@ -8,6 +8,140 @@ const SUGGESTED_PROMPTS = [
   "What is the best way to prevent Cross-Site Scripting (XSS)?",
   "How can I reduce cyclomatic complexity in large functions?",
 ];
+
+function parseInlineMarkdown(text) {
+  if (!text) return null;
+  const parts = text.split(/(\*\*[\s\S]+?\*\*|`[^`]+`|\*[^\*]+\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**") && part.length >= 4) {
+      return (
+        <strong key={i} className="font-semibold text-slate-100">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith("`") && part.endsWith("`") && part.length >= 2) {
+      return (
+        <code key={i} className="rounded bg-slate-800/80 px-1.5 py-0.5 font-mono text-[11px] text-cyan-300 border border-slate-700/60">
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    if (part.startsWith("*") && part.endsWith("*") && part.length >= 2 && !part.startsWith("**")) {
+      return (
+        <em key={i} className="italic text-slate-300">
+          {part.slice(1, -1)}
+        </em>
+      );
+    }
+    return part;
+  });
+}
+
+function FormattedText({ text }) {
+  if (!text) return null;
+  const lines = text.split("\n");
+  return (
+    <div className="space-y-1">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          return <div key={idx} className="h-1.5" />;
+        }
+
+        if (trimmed.startsWith("### ")) {
+          return (
+            <h3 key={idx} className="font-bold text-sm text-cyan-300 mt-2 mb-1">
+              {parseInlineMarkdown(trimmed.slice(4))}
+            </h3>
+          );
+        }
+        if (trimmed.startsWith("#### ")) {
+          return (
+            <h4 key={idx} className="font-semibold text-xs text-indigo-300 mt-1.5 mb-0.5">
+              {parseInlineMarkdown(trimmed.slice(5))}
+            </h4>
+          );
+        }
+
+        if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+          return (
+            <div key={idx} className="flex gap-2 pl-2 text-slate-200">
+              <span className="text-cyan-400 font-bold select-none">•</span>
+              <span>{parseInlineMarkdown(trimmed.slice(2))}</span>
+            </div>
+          );
+        }
+
+        const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+        if (numMatch) {
+          return (
+            <div key={idx} className="flex gap-2 pl-2 text-slate-200">
+              <span className="text-cyan-400 font-bold select-none">{numMatch[1]}.</span>
+              <span>{parseInlineMarkdown(numMatch[2])}</span>
+            </div>
+          );
+        }
+
+        return (
+          <p key={idx} className="text-slate-200 leading-relaxed">
+            {parseInlineMarkdown(line)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function MessageContent({ content }) {
+  const [copiedCode, setCopiedCode] = useState(null);
+
+  if (!content) return null;
+
+  const parts = content.split(/(```[\s\S]*?```)/g);
+
+  return (
+    <div className="space-y-2 font-sans text-xs leading-relaxed">
+      {parts.map((part, index) => {
+        if (part.startsWith("```") && part.endsWith("```")) {
+          const firstLineEnd = part.indexOf("\n");
+          let codeLang = "code";
+          let codeText = part.slice(3, -3);
+          if (firstLineEnd !== -1 && firstLineEnd < 20) {
+            codeLang = part.slice(3, firstLineEnd).trim() || "code";
+            codeText = part.slice(firstLineEnd + 1, -3);
+          }
+          const isCopied = copiedCode === index;
+
+          return (
+            <div key={index} className="my-2 overflow-hidden rounded-xl border border-slate-700/80 bg-slate-950/90 shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/80 px-3 py-1.5 font-mono text-[10px] text-slate-400">
+                <span className="uppercase text-cyan-400 font-bold">{codeLang}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(codeText.trim());
+                    setCopiedCode(index);
+                    setTimeout(() => setCopiedCode(null), 2000);
+                  }}
+                  className="inline-flex items-center gap-1 rounded bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-200 hover:bg-slate-700 transition"
+                >
+                  {isCopied ? <Check size={11} className="text-emerald-300" /> : <Copy size={11} />}
+                  <span>{isCopied ? "Copied!" : "Copy"}</span>
+                </button>
+              </div>
+              <pre className="overflow-x-auto p-3 font-mono text-[11px] text-slate-200 leading-relaxed">
+                <code>{codeText.trim()}</code>
+              </pre>
+            </div>
+          );
+        }
+
+        return <FormattedText key={index} text={part} />;
+      })}
+    </div>
+  );
+}
 
 export default function ConversationalAssistant({ analysisId, language = "python", isOpen, onClose }) {
   const [messages, setMessages] = useState([
@@ -151,7 +285,7 @@ export default function ConversationalAssistant({ analysisId, language = "python
                     : "bg-slate-900/90 text-slate-200 border border-slate-800 rounded-tl-none"
                 }`}
               >
-                <div className="whitespace-pre-wrap font-sans">{msg.content}</div>
+                <MessageContent content={msg.content} />
               </div>
 
               {/* RAG Citations */}
@@ -205,7 +339,12 @@ export default function ConversationalAssistant({ analysisId, language = "python
       <div className="border-t border-slate-800/80 bg-slate-900/30 px-4 py-2">
         <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Suggested Questions</p>
         <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-          {SUGGESTED_PROMPTS.map((prompt, pIdx) => (
+          {(analysisId && analysisId !== "—" ? [
+            "What are all findings in this file?",
+            "How do I fix high severity issues?",
+            "Explain OWASP Top 10 vulnerabilities",
+            "How do I prevent SQL injection?"
+          ] : SUGGESTED_PROMPTS).map((prompt, pIdx) => (
             <button
               key={pIdx}
               type="button"

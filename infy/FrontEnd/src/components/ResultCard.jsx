@@ -21,10 +21,11 @@ import {
   ListOrdered,
   Download,
   FileCode2,
-  ArrowRight
+  ArrowRight,
+  Lock
 } from "lucide-react";
 
-export default function ResultCard({ result, error }) {
+export default function ResultCard({ result, error, authUser, onOpenAuth }) {
   const [activeTab, setActiveTab] = useState("findings"); // 'findings' | 'summary' | 'remediation'
   const [activeFilter, setActiveFilter] = useState("all");
 
@@ -36,6 +37,7 @@ export default function ResultCard({ result, error }) {
   const [prSummaryResult, setPrSummaryResult] = useState(null);
   const [prSummaryError, setPrSummaryError] = useState("");
   const [prSummaryCopied, setPrSummaryCopied] = useState(false);
+  const [copiedRemediationIdx, setCopiedRemediationIdx] = useState(null);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
   // Background pre-fetch PR Summary & AI Remediation as soon as analysis ID is ready
@@ -112,6 +114,10 @@ export default function ResultCard({ result, error }) {
   );
 
   const handleGenerateRemediation = async () => {
+    if (!authUser) {
+      if (onOpenAuth) onOpenAuth();
+      return;
+    }
     setActiveTab("remediation");
     if (remediationResult) return;
     if (!analysisId || analysisId === "—") {
@@ -133,6 +139,10 @@ export default function ResultCard({ result, error }) {
   };
 
   const handleGeneratePRSummary = async () => {
+    if (!authUser) {
+      if (onOpenAuth) onOpenAuth();
+      return;
+    }
     setActiveTab("summary");
     if (prSummaryResult) return;
     if (!analysisId || analysisId === "—") {
@@ -371,7 +381,6 @@ export default function ResultCard({ result, error }) {
 
       {/* ==============================================
           MAIN INTERACTIVE NAVIGATION TAB BAR
-          (Allows in-place switching without scrolling!)
       =============================================== */}
       <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-1.5 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
@@ -403,7 +412,8 @@ export default function ResultCard({ result, error }) {
           >
             <FileText size={15} />
             <span>{prSummaryLoading ? "Compiling PR..." : "PR Review Summary"}</span>
-            {prSummaryResult && (
+            {!authUser && <Lock size={12} className="text-amber-400 shrink-0" />}
+            {authUser && prSummaryResult && (
               <span className="rounded-full bg-indigo-500/30 px-2 py-0.5 text-[10px] text-indigo-300 font-mono">
                 {prSummaryResult.health_score}%
               </span>
@@ -422,7 +432,8 @@ export default function ResultCard({ result, error }) {
           >
             <Sparkles size={15} />
             <span>{remediationLoading ? "Generating Fixes..." : "AI Remediation Roadmap"}</span>
-            {remediationResult && (
+            {!authUser && <Lock size={12} className="text-amber-400 shrink-0" />}
+            {authUser && remediationResult && (
               <span className="rounded-full bg-emerald-500/30 px-2 py-0.5 text-[10px] text-emerald-300">
                 Ready
               </span>
@@ -432,16 +443,23 @@ export default function ResultCard({ result, error }) {
 
         <button
           type="button"
-          onClick={() => setIsAssistantOpen(true)}
+          onClick={() => {
+            if (!authUser) {
+              if (onOpenAuth) onOpenAuth();
+            } else {
+              setIsAssistantOpen(true);
+            }
+          }}
           className="flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3.5 py-2 text-xs font-bold text-emerald-200 hover:bg-emerald-500/20 transition"
         >
           <Bot size={15} />
           <span>Ask Code Assistant</span>
+          {!authUser && <Lock size={12} className="text-amber-400 shrink-0" />}
         </button>
       </div>
 
       {/* ==============================================
-          TAB 1: UNIFIED FINDINGS LIST
+          TAB 1: UNIFIED FINDINGS LIST (WITH TEASER PREVIEW FOR GUESTS)
       =============================================== */}
       {activeTab === "findings" && (
         <div className="rounded-2xl border border-slate-700/80 bg-slate-900/50 p-5 space-y-4">
@@ -496,29 +514,61 @@ export default function ResultCard({ result, error }) {
                         </span>
                       </div>
                       <span className="rounded border border-slate-700 bg-slate-800/80 px-2 py-0.5 font-mono text-[11px] text-slate-300">
-                        Line {item.line ?? "—"}
+                        {authUser ? (
+                          `Line ${item.line ?? "—"}`
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-cyan-300 font-bold">
+                            <Lock size={11} /> Line Locked
+                          </span>
+                        )}
                       </span>
                     </div>
 
                     <h4 className="text-sm font-bold text-slate-100">{item.title}</h4>
                     <p className="mt-1 text-xs text-slate-400 leading-relaxed">{item.description}</p>
 
-                    {item.code_snippet && (
-                      <div className="mt-2.5 rounded-lg border border-slate-800 bg-slate-900/80 p-2.5">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Flagged Snippet</p>
-                        <pre className="overflow-x-auto font-mono text-xs text-slate-200">
-                          <code>{item.code_snippet}</code>
-                        </pre>
-                      </div>
-                    )}
+                    {authUser ? (
+                      <>
+                        {item.code_snippet && (
+                          <div className="mt-2.5 rounded-lg border border-slate-800 bg-slate-900/80 p-2.5">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Flagged Snippet</p>
+                            <pre className="overflow-x-auto font-mono text-xs text-slate-200">
+                              <code>{item.code_snippet}</code>
+                            </pre>
+                          </div>
+                        )}
 
-                    {item.recommendation && (
-                      <div className="mt-2.5 rounded-lg border border-cyan-400/15 bg-cyan-400/5 p-2.5 text-xs text-cyan-200/90 leading-relaxed">
-                        <div className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-cyan-300 mb-1">
-                          <Lightbulb size={12} />
-                          <span>RAG Knowledge Base Guidance</span>
+                        {item.recommendation && (
+                          <div className="mt-2.5 rounded-lg border border-cyan-400/15 bg-cyan-400/5 p-2.5 text-xs text-cyan-200/90 leading-relaxed">
+                            <div className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-cyan-300 mb-1">
+                              <Lightbulb size={12} />
+                              <span>RAG Knowledge Base Guidance</span>
+                            </div>
+                            <p className="whitespace-pre-line">{item.recommendation}</p>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="mt-3 rounded-xl border border-cyan-400/20 bg-gradient-to-r from-cyan-950/40 via-slate-950 to-indigo-950/40 p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2.5">
+                          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cyan-400/15 text-cyan-300 border border-cyan-400/30">
+                            <Lock size={15} />
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-200">Line snippets & RAG fix recommendations locked</p>
+                            <p className="text-[11px] text-slate-400">Sign in or register to unlock exact line locations and automated AI patches.</p>
+                          </div>
                         </div>
-                        <p className="whitespace-pre-line">{item.recommendation}</p>
+                        {onOpenAuth && (
+                          <button
+                            type="button"
+                            onClick={onOpenAuth}
+                            className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-300 to-blue-500 px-3 py-1.5 text-xs font-bold text-slate-950 shadow-glow hover:brightness-110 transition"
+                          >
+                            <span>Sign In to Unlock</span>
+                            <ArrowRight size={13} />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -530,6 +580,32 @@ export default function ResultCard({ result, error }) {
               <p className="text-xs font-semibold text-emerald-300">
                 ✓ No findings match the active filter.
               </p>
+            </div>
+          )}
+
+          {!authUser && (
+            <div className="mt-6 relative overflow-hidden rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-slate-900/95 via-slate-950 to-indigo-950/90 p-6 shadow-2xl text-center">
+              <div className="relative max-w-lg mx-auto space-y-3">
+                <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-cyan-400/15 border border-cyan-400/30 text-cyan-300 shadow-glow">
+                  <Lock size={22} />
+                </div>
+                <h3 className="text-lg font-extrabold text-white">
+                  Unlock PR Summary, AI Remediation & Code Assistant
+                </h3>
+                <p className="text-xs leading-5 text-slate-300">
+                  Sign in or create a free account to unlock automated PR reviews, exportable PDF reports, line-by-line AI refactoring roadmaps, and interactive AI chat.
+                </p>
+                {onOpenAuth && (
+                  <button
+                    type="button"
+                    onClick={onOpenAuth}
+                    className="mt-2 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-300 to-blue-500 px-5 py-3 text-xs font-bold text-slate-950 shadow-glow transition hover:brightness-110"
+                  >
+                    <span>Sign In / Sign Up to Unlock All Features</span>
+                    <ArrowRight size={15} />
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -735,26 +811,44 @@ export default function ResultCard({ result, error }) {
                     <p className="text-xs text-slate-200 leading-relaxed">{rem.recommendation}</p>
                   </div>
 
-                  {/* Side by side code or corrected code block */}
+                  {/* Side by side code diff comparison viewer */}
                   <div className="grid gap-3 lg:grid-cols-2">
                     {rem.original_code && (
-                      <div className="rounded-lg border border-rose-500/20 bg-rose-950/20 p-3">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-rose-400 mb-1.5 flex items-center gap-1">
-                          <CircleAlert size={11} />
-                          Original Vulnerable Code
-                        </p>
-                        <pre className="overflow-x-auto font-mono text-xs text-rose-200 p-2 rounded bg-slate-950/60">
+                      <div className="rounded-xl border border-rose-500/30 bg-gradient-to-b from-rose-950/40 to-slate-950/80 p-3.5 shadow-sm">
+                        <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-rose-500/20">
+                          <p className="text-[11px] font-bold uppercase tracking-wider text-rose-300 flex items-center gap-1.5">
+                            <CircleAlert size={13} className="text-rose-400" />
+                            🔴 Original Vulnerable Code
+                          </p>
+                          <span className="font-mono text-[10px] text-rose-400/80 bg-rose-500/10 px-1.5 py-0.5 rounded">Insecure</span>
+                        </div>
+                        <pre className="overflow-x-auto font-mono text-xs text-rose-200/90 p-3 rounded-lg bg-slate-950/80 border border-rose-500/10 leading-relaxed">
                           <code>{rem.original_code}</code>
                         </pre>
                       </div>
                     )}
 
-                    <div className={`rounded-lg border border-emerald-500/20 bg-emerald-950/20 p-3 ${!rem.original_code ? 'lg:col-span-2' : ''}`}>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-1.5 flex items-center gap-1">
-                        <CheckCircle2 size={11} />
-                        Corrected Secure Code
-                      </p>
-                      <pre className="overflow-x-auto font-mono text-xs text-emerald-200 p-2 rounded bg-slate-950/60">
+                    <div className={`rounded-xl border border-emerald-500/30 bg-gradient-to-b from-emerald-950/40 to-slate-950/80 p-3.5 shadow-sm ${!rem.original_code ? 'lg:col-span-2' : ''}`}>
+                      <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-emerald-500/20">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
+                          <CheckCircle2 size={13} className="text-emerald-400" />
+                          🟢 AI-Remediated Secure Code
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!rem.corrected_code) return;
+                            navigator.clipboard.writeText(rem.corrected_code);
+                            setCopiedRemediationIdx(idx);
+                            setTimeout(() => setCopiedRemediationIdx(null), 2500);
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/20 border border-emerald-400/30 px-2.5 py-1 text-[11px] font-bold text-emerald-200 hover:bg-emerald-500/30 transition shadow-sm"
+                        >
+                          {copiedRemediationIdx === idx ? <Check size={12} className="text-emerald-300" /> : <Copy size={12} />}
+                          <span>{copiedRemediationIdx === idx ? "Copied Fix!" : "Copy Fix"}</span>
+                        </button>
+                      </div>
+                      <pre className="overflow-x-auto font-mono text-xs text-emerald-200/90 p-3 rounded-lg bg-slate-950/80 border border-emerald-500/10 leading-relaxed">
                         <code>{rem.corrected_code}</code>
                       </pre>
                     </div>

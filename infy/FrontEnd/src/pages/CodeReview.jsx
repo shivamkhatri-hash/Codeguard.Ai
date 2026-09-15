@@ -9,7 +9,7 @@ import { DEFAULT_CODE } from "../types/analysis";
 import { submitCode } from "../services/api";
 
 
-export default function CodeReview({ onNavigate, initialAnalysis }) {
+export default function CodeReview({ onNavigate, initialAnalysis, authUser, onOpenAuth }) {
   const [language, setLanguage] = useState(initialAnalysis?.language || "python");
   const [code, setCode] = useState(initialAnalysis?.code || "");
   const [fileName, setFileName] = useState(initialAnalysis?.filename || "");
@@ -192,6 +192,8 @@ export default function CodeReview({ onNavigate, initialAnalysis }) {
   {!loading && (
     <ResultCard
       result={result}
+      authUser={authUser}
+      onOpenAuth={onOpenAuth}
       error={
         result
           ? ""

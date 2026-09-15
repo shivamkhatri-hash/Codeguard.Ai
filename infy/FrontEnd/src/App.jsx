@@ -30,15 +30,21 @@ function formatDate(dateStr) {
   }
 }
 
-function HistoryView({ onNavigate, onSelectAnalysis }) {
+function HistoryView({ onNavigate, onSelectAnalysis, authUser, onOpenAuth }) {
   const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!authUser);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState("");
 
   useEffect(() => {
-    let active = true;
+    if (!authUser) {
+      setHistory([]);
+      setLoading(false);
+      return;
+    }
 
+    let active = true;
+    setLoading(true);
     getAnalysisHistory()
       .then((data) => {
         if (active) setHistory(Array.isArray(data) ? data : []);
@@ -53,7 +59,7 @@ function HistoryView({ onNavigate, onSelectAnalysis }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [authUser]);
 
   const handleDelete = async (analysisId) => {
     if (!window.confirm(`Delete analysis ${analysisId}?`)) return;
@@ -91,11 +97,30 @@ function HistoryView({ onNavigate, onSelectAnalysis }) {
         {loading && <div className="mt-6 glass rounded-2xl p-6 text-sm text-slate-400">Loading history...</div>}
         {error && <div className="mt-6 rounded-2xl border border-rose-400/20 bg-rose-400/5 p-5 text-sm text-rose-200">{error}</div>}
         {!loading && !error && history.length === 0 && (
-          <div className="mt-6 glass rounded-2xl p-8 text-center">
-            <p className="text-sm text-slate-400">No analyses have been saved yet.</p>
-            <button type="button" onClick={() => onNavigate("analyze")} className="mt-5 rounded-xl bg-gradient-to-r from-cyan-300 to-blue-500 px-5 py-3 text-sm font-bold text-slate-950">
-              Start an Analysis
-            </button>
+          <div className="mt-6 glass rounded-2xl p-8 text-center max-w-xl mx-auto">
+            <p className="text-sm text-slate-300">
+              {authUser
+                ? "No analyses have been saved yet."
+                : "You are currently exploring in Guest mode. Sign in to save, sync, and track your code inspection history across sessions."}
+            </p>
+            <div className="mt-6 flex items-center justify-center gap-3">
+              {!authUser && onOpenAuth && (
+                <button
+                  type="button"
+                  onClick={onOpenAuth}
+                  className="rounded-xl bg-gradient-to-r from-cyan-300 to-blue-500 px-5 py-3 text-sm font-bold text-slate-950 shadow-glow hover:brightness-110 transition"
+                >
+                  Sign In / Sign Up
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => onNavigate("analyze")}
+                className="rounded-xl border border-slate-700 bg-slate-900/60 px-5 py-3 text-sm font-semibold text-slate-300 hover:text-white transition"
+              >
+                Start an Analysis
+              </button>
+            </div>
           </div>
         )}
         {history.length > 0 && (
@@ -212,15 +237,31 @@ export default function App() {
         onLogout={handleLogout}
       />
       {activePage === "landing" && <LandingPage onNavigate={navigate} />}
-      {activePage === "dashboard" && <Dashboard onNavigate={navigate} onSelectAnalysis={handleSelectAnalysis} />}
+      {activePage === "dashboard" && (
+        <Dashboard
+          onNavigate={navigate}
+          onSelectAnalysis={handleSelectAnalysis}
+          authUser={authUser}
+          onOpenAuth={() => setIsAuthOpen(true)}
+        />
+      )}
       {activePage === "analyze" && (
         <CodeReview
           key={activeAnalysis ? (activeAnalysis.analysis_id || activeAnalysis.id || "existing") : "new-inspection"}
           onNavigate={navigate}
           initialAnalysis={activeAnalysis}
+          authUser={authUser}
+          onOpenAuth={() => setIsAuthOpen(true)}
         />
       )}
-      {activePage === "history" && <HistoryView onNavigate={navigate} onSelectAnalysis={handleSelectAnalysis} />}
+      {activePage === "history" && (
+        <HistoryView
+          onNavigate={navigate}
+          onSelectAnalysis={handleSelectAnalysis}
+          authUser={authUser}
+          onOpenAuth={() => setIsAuthOpen(true)}
+        />
+      )}
       {activePage === "admin" && <AdminDashboard />}
 
       <AuthModal

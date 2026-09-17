@@ -73,22 +73,27 @@ class MongoDBStorageService:
         errors: Optional[List[Dict[str, Any]]] = None,
         findings: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
+        from app.services.storage_service import get_default_filename
         if isinstance(data_or_filename, dict):
             data = data_or_filename
-            filename = data.get("filename") or ("main." + ("py" if data.get("language") == "python" else "java"))
-            status = data.get("status", "completed")
             language = data.get("language", "python")
+            filename = data.get("filename") or get_default_filename(language)
+            status = data.get("status", "completed")
             code = data.get("code", "")
             syntax_valid = data.get("syntax_valid", True)
             errors = data.get("errors") or []
             findings = data.get("findings") or []
         else:
-            filename = data_or_filename or ("main." + ("py" if (language or "python") == "python" else "java"))
+            language = language or "python"
+            filename = data_or_filename or get_default_filename(language)
+
+        user_id = data.get("user_id") if isinstance(data_or_filename, dict) else None
 
         now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
         doc = {
             "analysis_id": analysis_id,
+            "user_id": user_id,
             "filename": filename,
             "status": status,
             "language": language,
@@ -108,8 +113,11 @@ class MongoDBStorageService:
         doc.pop("_id", None)
         return doc
 
-    def list_analyses(self, limit: int = 50) -> List[Dict[str, Any]]:
-        cursor = self.analyses.find().sort("created_at", DESCENDING).limit(limit)
+    def list_analyses(self, limit: int = 50, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        query = {}
+        if user_id:
+            query = {"user_id": user_id}
+        cursor = self.analyses.find(query).sort("created_at", DESCENDING).limit(limit)
         results = []
         for doc in cursor:
             doc.pop("_id", None)
@@ -201,7 +209,12 @@ class MongoDBStorageService:
         user = self.users.find_one({"user_id": user_id})
         if not user:
             return False
-        new_status = not user.get("is_active", True)
+        val = user.get("is_active")
+        if isinstance(val, str):
+            is_active = val.lower() in ("true", "1", "yes")
+        else:
+            is_active = bool(val)
+        new_status = not is_active
         self.users.update_one({"user_id": user_id}, {"$set": {"is_active": new_status}})
         return True
 

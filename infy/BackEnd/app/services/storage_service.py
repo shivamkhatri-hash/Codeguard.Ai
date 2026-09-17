@@ -5,6 +5,22 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+DEFAULT_FILENAMES = {
+    "python": "main.py",
+    "java": "Main.java",
+    "javascript": "app.js",
+    "typescript": "app.ts",
+    "cpp": "main.cpp",
+    "go": "main.go",
+    "html": "index.html",
+}
+
+
+def get_default_filename(language: str) -> str:
+    lang = (language or "python").lower()
+    return DEFAULT_FILENAMES.get(lang, f"main.{lang}")
+
+
 class SQLiteStorageService:
     def __init__(self):
         self._database_path = (
@@ -41,9 +57,13 @@ class SQLiteStorageService:
                 """
             )
 
-            # Auto-migrate table if filename column doesn't exist yet
+            # Auto-migrate table if filename or user_id columns don't exist yet
             try:
                 connection.execute("ALTER TABLE analyses ADD COLUMN filename TEXT")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                connection.execute("ALTER TABLE analyses ADD COLUMN user_id TEXT")
             except sqlite3.OperationalError:
                 pass
 
@@ -103,7 +123,7 @@ class SQLiteStorageService:
         keys = row.keys()
         return {
             "analysis_id": row["analysis_id"],
-            "filename": row["filename"] if "filename" in keys and row["filename"] else ("main." + ("py" if row["language"] == "python" else "java")),
+            "filename": row["filename"] if "filename" in keys and row["filename"] else get_default_filename(row["language"]),
             "status": row["status"],
             "language": row["language"],
             "code": row["code"],
@@ -120,7 +140,8 @@ class SQLiteStorageService:
         analysis_id: str,
         data: Dict[str, Any],
     ) -> None:
-        filename = data.get("filename") or ("main." + ("py" if data.get("language") == "python" else "java"))
+        filename = data.get("filename") or get_default_filename(data.get("language"))
+        user_id = data.get("user_id")
         with self._connect() as connection:
             connection.execute(
                 """
@@ -128,6 +149,7 @@ class SQLiteStorageService:
                 (
                     analysis_id,
                     filename,
+                    user_id,
                     status,
                     language,
                     code,
@@ -135,11 +157,12 @@ class SQLiteStorageService:
                     errors,
                     findings
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     analysis_id,
                     filename,
+                    user_id,
                     data["status"],
                     data["language"],
                     data["code"],
@@ -164,17 +187,30 @@ class SQLiteStorageService:
     def list_analyses(
         self,
         limit: int = 50,
+        user_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         with self._connect() as connection:
-            rows = connection.execute(
-                """
-                SELECT *
-                FROM analyses
-                ORDER BY created_at DESC, rowid DESC
-                LIMIT ?
-                """,
-                (limit,),
-            ).fetchall()
+            if user_id:
+                rows = connection.execute(
+                    """
+                    SELECT *
+                    FROM analyses
+                    WHERE user_id = ?
+                    ORDER BY created_at DESC, rowid DESC
+                    LIMIT ?
+                    """,
+                    (user_id, limit),
+                ).fetchall()
+            else:
+                rows = connection.execute(
+                    """
+                    SELECT *
+                    FROM analyses
+                    ORDER BY created_at DESC, rowid DESC
+                    LIMIT ?
+                    """,
+                    (limit,),
+                ).fetchall()
 
         return [self._decode(row) for row in rows]
 
@@ -285,10 +321,16 @@ class SQLiteStorageService:
             return [dict(row) for row in rows]
 
     def toggle_user_status(self, user_id: str) -> bool:
+        user = self.get_user_by_id(user_id)
+        if not user:
+            return False
+        val = user.get("is_active")
+        is_active = bool(val)
+        new_status = 0 if is_active else 1
         with self._connect() as connection:
             cursor = connection.execute(
-                "UPDATE users SET is_active = CASE WHEN is_active = 1 THEN 0 ELSE 1 END WHERE user_id = ?",
-                (user_id,)
+                "UPDATE users SET is_active = ? WHERE user_id = ?",
+                (new_status, user_id)
             )
             return cursor.rowcount > 0
 

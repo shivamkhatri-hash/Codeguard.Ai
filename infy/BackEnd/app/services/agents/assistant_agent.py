@@ -590,7 +590,10 @@ class ConversationalAssistantAgent:
                 is_explicit_report = any(k in query_lower for k in [
                     "what are all findings", "all findings", "show all findings", "list all findings",
                     "full report", "vulnerability report", "scan report", "all issues", "show report",
-                    "list findings", "overview of findings", "diagnostic analysis", "all vulnerabilities"
+                    "list findings", "overview of findings", "diagnostic analysis", "all vulnerabilities",
+                    "every bug", "all bugs", "bugs found", "line-by-line", "explain every bug",
+                    "explanation of every bug", "every issue", "all defects", "explain findings", "explain bugs",
+                    "line by line"
                 ])
                 is_high_sec = any(k in query_lower for k in ["high severity", "critical", "major vulnerability", "major issue"])
                 is_med_sec = any(k in query_lower for k in ["medium severity", "medium issue", "medium vulnerability", "medium", "moderate"])

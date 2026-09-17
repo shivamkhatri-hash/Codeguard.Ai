@@ -271,8 +271,45 @@ class CodeValidatorService:
 
     def _validate_html(self, code: str) -> dict:
         """
-        Validates HTML tag structure using Python's HTMLParser.
+        Validates HTML tag structure using Python's HTMLParser and checks for language mismatches.
         """
+        stripped = code.strip()
+
+        # 1. Detect non-HTML programming language keywords
+        non_html_patterns = [
+            (r"^\s*package\s+\w+", "Go / Java package declaration"),
+            (r"^\s*func\s+\w+", "Go function definition"),
+            (r"^\s*def\s+\w+\s*\(", "Python function definition"),
+            (r"^\s*#include\s*<", "C/C++ include header"),
+            (r"^\s*public\s+class\s+\w+", "Java class declaration"),
+            (r"^\s*using\s+namespace\s+", "C++ namespace statement"),
+        ]
+
+        for pattern, desc in non_html_patterns:
+            if re.search(pattern, stripped, re.MULTILINE):
+                return {
+                    "syntax_valid": False,
+                    "errors": [
+                        {
+                            "line": 1,
+                            "message": f"Language Mismatch: Selected language is HTML, but submitted code contains {desc}."
+                        }
+                    ]
+                }
+
+        # 2. Require presence of HTML tags or doctype
+        if not re.search(r"<[a-zA-Z!/][^>]*>", stripped):
+            return {
+                "syntax_valid": False,
+                "errors": [
+                    {
+                        "line": 1,
+                        "message": "Syntax Error: HTML source must contain valid HTML tags (e.g., <html>, <div>, <p>)."
+                    }
+                ]
+            }
+
+        # 3. Verify HTML tag balance
         parser = HTMLTagBalancer()
         try:
             parser.feed(code)
@@ -285,12 +322,125 @@ class CodeValidatorService:
         except Exception as e:
             return {"syntax_valid": False, "errors": [{"line": 1, "message": f"HTML parser exception: {str(e)}"}]}
 
+    @staticmethod
+    def validate_metadata(code: str, language: str) -> Tuple[bool, str]:
+        """
+        Validates basic metadata: language support, size limits, and non-empty criteria.
+        """
+        if not code or not code.strip():
+            return False, "Code content cannot be empty"
+            
+        if language.lower() not in settings.ALLOWED_LANGUAGES:
+            lang_display = language.capitalize() if language else "This language"
+            return False, f"{lang_display} is currently not supported by CodeGuard AI, but support will be added soon!"
+            
+        if len(code.encode("utf-8")) > settings.MAX_FILE_SIZE_BYTES:
+            limit_mb = settings.MAX_FILE_SIZE_BYTES / (1024 * 1024)
+            return False, f"Code size exceeds the limit of {limit_mb:.1f} MB"
+            
+        return True, ""
+
     @classmethod
     def validate_code(cls, code: str, language: str) -> Dict[str, Any]:
         """
-        Main entrypoint for syntax validation.
+        Main entrypoint for syntax validation and language mismatch verification.
         """
         lang = language.lower()
+        stripped = code.strip()
+
+        # 1. Guard against Unsupported Languages (Rust, C#, PHP, Ruby, Swift, Kotlin, etc.)
+        unsupported_signatures = [
+            (r"^\s*fn\s+main\s*\(", "Rust"),
+            (r"println!\s*\(", "Rust"),
+            (r"^\s*let\s+mut\s+", "Rust"),
+            (r"^\s*use\s+std::", "Rust"),
+            (r"^\s*pub\s+fn\s+", "Rust"),
+            (r"^\s*using\s+System;", "C#"),
+            (r"^\s*namespace\s+[A-Za-z0-9_.]+", "C#"),
+            (r"Console\.WriteLine\(", "C#"),
+            (r"^\s*<\?php", "PHP"),
+            (r"^\s*echo\s+\$", "PHP"),
+            (r"^\s*require\s+['\"]", "Ruby"),
+            (r"^\s*attr_accessor\s+", "Ruby"),
+            (r"^\s*fun\s+main\s*\(", "Kotlin"),
+            (r"^\s*import\s+Foundation", "Swift"),
+            (r"^\s*import\s+UIKit", "Swift"),
+            (r"^\s*object\s+\w+\s*\{\s*def\s+main", "Scala"),
+            (r"^#!/(bin|usr/bin)/(bash|sh|zsh)", "Shell"),
+            (r"^\s*library\([a-zA-Z0-9._]+\)", "R"),
+            (r"^\s*import\s+'package:", "Dart"),
+            (r"^\s*defmodule\s+", "Elixir"),
+            (r"^\s*main\s*::\s*IO\s*\(\)", "Haskell"),
+        ]
+        for pattern, detected_lang in unsupported_signatures:
+            if re.search(pattern, stripped, re.MULTILINE):
+                return {
+                    "syntax_valid": False,
+                    "errors": [
+                        {
+                            "line": 1,
+                            "message": f"{detected_lang} is currently not supported by CodeGuard AI, but support will be added soon!"
+                        }
+                    ]
+                }
+
+        # 2. Guard against raw HTML pasted into non-HTML languages
+        if lang in ("go", "cpp", "python", "java", "javascript", "typescript") and re.search(r"^\s*<(!DOCTYPE|html|body|div|p|h1|h2|script)", stripped, re.IGNORECASE):
+            return {
+                "syntax_valid": False,
+                "errors": [
+                    {
+                        "line": 1,
+                        "message": f"Language Mismatch: Selected language is {lang.upper()}, but submitted code appears to be HTML markup."
+                    }
+                ]
+            }
+
+        # 2. Guard against language construct mismatch for Go
+        if lang == "go":
+            mismatches = [
+                (r"^\s*def\s+\w+\s*\(", "Python function definition"),
+                (r"^\s*public\s+class\s+\w+", "Java class declaration"),
+                (r"^\s*#include\s*<", "C/C++ include header"),
+            ]
+            for pattern, desc in mismatches:
+                if re.search(pattern, stripped, re.MULTILINE):
+                    return {
+                        "syntax_valid": False,
+                        "errors": [{"line": 1, "message": f"Language Mismatch: Selected language is GO, but code contains {desc}."}]
+                    }
+
+        # 3. Guard against language construct mismatch for C++
+        if lang == "cpp":
+            mismatches = [
+                (r"^\s*package\s+main", "Go package declaration"),
+                (r"^\s*func\s+main", "Go function definition"),
+                (r"^\s*def\s+\w+\s*\(", "Python function definition"),
+                (r"^\s*public\s+class\s+\w+", "Java class declaration"),
+            ]
+            for pattern, desc in mismatches:
+                if re.search(pattern, stripped, re.MULTILINE):
+                    return {
+                        "syntax_valid": False,
+                        "errors": [{"line": 1, "message": f"Language Mismatch: Selected language is CPP, but code contains {desc}."}]
+                    }
+
+        # 4. Guard against language construct mismatch for TypeScript
+        if lang == "typescript":
+            mismatches = [
+                (r"^\s*package\s+main", "Go package declaration"),
+                (r"^\s*func\s+main", "Go function definition"),
+                (r"^\s*#include\s*<", "C/C++ include header"),
+                (r"^\s*def\s+\w+\s*\(", "Python function definition"),
+                (r"^\s*public\s+class\s+\w+", "Java class declaration"),
+            ]
+            for pattern, desc in mismatches:
+                if re.search(pattern, stripped, re.MULTILINE):
+                    return {
+                        "syntax_valid": False,
+                        "errors": [{"line": 1, "message": f"Language Mismatch: Selected language is TYPESCRIPT, but code contains {desc}."}]
+                    }
+
         if lang == "python":
             return cls.validate_python_syntax(code)
         elif lang == "java":
@@ -302,9 +452,10 @@ class CodeValidatorService:
         elif lang == "html":
             return cls()._validate_html(code)
         else:
+            lang_display = language.capitalize() if language else "This language"
             return {
                 "syntax_valid": False,
-                "errors": [{"line": 1, "message": f"Unsupported language '{language}' for syntax validation."}]
+                "errors": [{"line": 1, "message": f"{lang_display} is currently not supported by CodeGuard AI, but support will be added soon!"}]
             }
 
 code_validator_service = CodeValidatorService()

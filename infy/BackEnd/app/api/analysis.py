@@ -1,8 +1,20 @@
-from fastapi import APIRouter, HTTPException, status
+from typing import Optional
+from fastapi import APIRouter, HTTPException, Header, status
 from app.schemas.analysis import AnalysisStatusResponse
 from app.services.storage_service import storage_service
+from app.core.security import decode_jwt_token
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
+
+
+def _extract_user_id(authorization: Optional[str]) -> Optional[str]:
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+        payload = decode_jwt_token(token)
+        if payload:
+            return payload.get("user_id")
+    return None
+
 
 @router.get("/{analysis_id}", response_model=AnalysisStatusResponse)
 def get_analysis_status(analysis_id: str):
@@ -30,8 +42,9 @@ def get_analysis_status(analysis_id: str):
 
 
 @router.get("", response_model=list[AnalysisStatusResponse])
-def list_analysis_history():
-    """Returns the most recent saved analyses."""
+def list_analysis_history(authorization: Optional[str] = Header(None)):
+    """Returns the most recent saved analyses for the authenticated user."""
+    user_id = _extract_user_id(authorization)
     return [
         AnalysisStatusResponse(
             analysis_id=item["analysis_id"],
@@ -44,7 +57,7 @@ def list_analysis_history():
             findings=item.get("findings"),
             created_at=item.get("created_at"),
         )
-        for item in storage_service.list_analyses()
+        for item in storage_service.list_analyses(user_id=user_id)
     ]
 
 

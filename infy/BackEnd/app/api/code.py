@@ -1,19 +1,45 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, HTTPException, UploadFile, File, Header, status
 
 from app.schemas.code import CodeSubmitRequest, CodeSubmitResponse
 from app.services.code_validator import code_validator_service
 from app.services.file_service import file_service
 from app.services.storage_service import storage_service
 from app.services.agent_orchestrator import agent_orchestrator
+from app.core.security import decode_jwt_token
 
 
 router = APIRouter(prefix="/code", tags=["code"])
 
 
+DEFAULT_FILENAMES = {
+    "python": "main.py",
+    "java": "Main.java",
+    "javascript": "app.js",
+    "typescript": "app.ts",
+    "cpp": "main.cpp",
+    "go": "main.go",
+    "html": "index.html",
+}
+
+
+def get_default_filename(language: str) -> str:
+    lang = (language or "python").lower()
+    return DEFAULT_FILENAMES.get(lang, f"main.{lang}")
+
+
+def _extract_user_id(authorization: Optional[str]) -> Optional[str]:
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+        payload = decode_jwt_token(token)
+        if payload:
+            return payload.get("user_id")
+    return None
+
+
 @router.post("/submit", response_model=CodeSubmitResponse)
-async def submit_code(payload: CodeSubmitRequest):
+async def submit_code(payload: CodeSubmitRequest, authorization: Optional[str] = Header(None)):
     """
     Submits source code directly in a JSON body.
 
@@ -52,9 +78,10 @@ async def submit_code(payload: CodeSubmitRequest):
     analysis_id = storage_service.generate_id()
 
     # Save validation state + findings to memory storage
-    filename = payload.filename or ("main." + ("py" if payload.language.lower() == "python" else "java"))
+    filename = payload.filename or get_default_filename(payload.language)
     analysis_data = {
         "analysis_id": analysis_id,
+        "user_id": _extract_user_id(authorization),
         "filename": filename,
         "status": (
             "completed"
@@ -95,7 +122,7 @@ async def submit_code(payload: CodeSubmitRequest):
 
 
 @router.post("/upload", response_model=CodeSubmitResponse)
-async def upload_code(file: UploadFile = File(...)):
+async def upload_code(file: UploadFile = File(...), authorization: Optional[str] = Header(None)):
     """
     Uploads a code file, runs syntax checking and
     code quality/security vulnerability analysis.
@@ -145,11 +172,12 @@ async def upload_code(file: UploadFile = File(...)):
 
     # Generate unique analysis ID
     analysis_id = storage_service.generate_id()
-    filename = file.filename or ("uploaded." + ("py" if language == "python" else "java"))
+    filename = file.filename or get_default_filename(language)
 
     # Save validation state to memory
     analysis_data = {
         "analysis_id": analysis_id,
+        "user_id": _extract_user_id(authorization),
         "filename": filename,
         "status": (
             "completed"

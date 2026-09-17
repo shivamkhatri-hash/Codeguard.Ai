@@ -75,6 +75,7 @@ def generate_remediation(analysis_id: str):
         findings = [
             Finding.model_validate(finding_data)
             for finding_data in findings_data
+            if finding_data.get("title") != "Software Architecture Metrics"
         ]
 
     except Exception as exc:

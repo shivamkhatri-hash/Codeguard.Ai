@@ -201,6 +201,22 @@ export default function App() {
   const [activeAnalysis, setActiveAnalysis] = useState(null);
   const [authUser, setAuthUser] = useState(() => getAuthUser());
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
+
+  useEffect(() => {
+    localStorage.setItem("theme", theme);
+    if (theme === "light") {
+      document.documentElement.classList.add("light");
+      document.body.classList.add("light-mode");
+    } else {
+      document.documentElement.classList.remove("light");
+      document.body.classList.remove("light-mode");
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
 
   const navigate = (page) => {
     setActiveAnalysis(null);
@@ -228,13 +244,15 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050b14] text-slate-100">
+    <div className={`min-h-screen transition-colors duration-300 ${theme === 'light' ? 'bg-slate-50 text-slate-900' : 'bg-[#050b14] text-slate-100'}`}>
       <Navbar
         activePage={activePage}
         onNavigate={navigate}
         authUser={authUser}
         onOpenAuth={() => setIsAuthOpen(true)}
         onLogout={handleLogout}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
       {activePage === "landing" && <LandingPage onNavigate={navigate} />}
       {activePage === "dashboard" && (

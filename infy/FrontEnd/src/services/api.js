@@ -32,7 +32,7 @@ async function parseResponse(response) {
 export async function submitCode({ language, code, filename }) {
   const response = await fetch(`${API_BASE_URL}/api/code/submit`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
     body: JSON.stringify({ language, code, filename: filename || undefined })
   });
   return parseResponse(response);
@@ -44,6 +44,7 @@ export async function uploadCodeFile(file) {
 
   const response = await fetch(`${API_BASE_URL}/api/code/upload`, {
     method: "POST",
+    headers: getAuthHeaders(),
     body: formData
   });
 
@@ -51,7 +52,9 @@ export async function uploadCodeFile(file) {
 }
 
 export async function getAnalysisHistory() {
-  const response = await fetch(`${API_BASE_URL}/api/analysis`);
+  const response = await fetch(`${API_BASE_URL}/api/analysis`, {
+    headers: getAuthHeaders()
+  });
   return parseResponse(response);
 }
 

@@ -18,11 +18,13 @@ export default function LanguageSelector({ language, onChange }) {
         Language
       </label>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
+      <div role="radiogroup" aria-label="Select Programming Language" className="grid grid-cols-2 gap-2 sm:grid-cols-2">
         {LANGUAGES.map((item) => (
           <button
             key={item.value}
             type="button"
+            role="radio"
+            aria-checked={language === item.value}
             onClick={() => onChange(item.value)}
             className={`flex items-center gap-2.5 rounded-xl border px-2.5 py-2 text-left transition ${
               language === item.value

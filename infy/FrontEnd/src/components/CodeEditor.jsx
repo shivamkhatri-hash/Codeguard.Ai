@@ -69,7 +69,6 @@ export default function CodeEditor({ code = "", language, fileName, onChange, di
             style={{
               minHeight: 430,
               background: "transparent",
-              color: "#e2e8f0",
               fontFamily: '"JetBrains Mono", monospace',
               fontSize: 13,
               lineHeight: 1.5,

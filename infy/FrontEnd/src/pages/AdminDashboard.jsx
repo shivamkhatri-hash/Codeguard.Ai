@@ -46,10 +46,12 @@ export default function AdminDashboard() {
   const handleToggleUser = async (userId) => {
     setTogglingId(userId);
     try {
-      await toggleUserStatus(userId);
+      const res = await toggleUserStatus(userId);
       setUsers((prev) =>
-        prev.map((u) => (u.user_id === userId ? { ...u, is_active: !u.is_active } : u))
+        prev.map((u) => (u.user_id === userId ? { ...u, is_active: Boolean(res.is_active) } : u))
       );
+      const updatedStats = await getAdminStats();
+      setStats(updatedStats);
     } catch (err) {
       alert(err.message || "Failed to update user status.");
     } finally {

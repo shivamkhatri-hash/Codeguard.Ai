@@ -82,8 +82,18 @@ export default function ResultCard({ result, error, authUser, onOpenAuth }) {
 
   if (!result) return null;
 
+  const DEFAULT_FILE_NAMES = {
+    python: "main.py",
+    java: "Main.java",
+    javascript: "app.js",
+    typescript: "app.ts",
+    cpp: "main.cpp",
+    go: "main.go",
+    html: "index.html"
+  };
+
   const analysisId = result.analysis_id || result.analysisId || result.id || "—";
-  const displayFileName = result.filename || (result.language === "java" ? "Main.java" : "main.py");
+  const displayFileName = result.filename || DEFAULT_FILE_NAMES[String(result.language || "").toLowerCase()] || "main.py";
   const language = result.language || "—";
   const isSyntaxValid = result.syntax_valid ?? result.syntaxValid ?? true;
   const status = result.status || (isSyntaxValid ? "completed" : "failed");
@@ -443,6 +453,8 @@ export default function ResultCard({ result, error, authUser, onOpenAuth }) {
 
         <button
           type="button"
+          aria-expanded={isAssistantOpen}
+          aria-controls="assistant-drawer"
           onClick={() => {
             if (!authUser) {
               if (onOpenAuth) onOpenAuth();

@@ -63,6 +63,7 @@ export default function FileUpload({ onCodeLoaded, onFileNameChange, onLanguageD
         ref={inputRef}
         type="file"
         accept=".py,.java,.js,.ts,.cpp,.cc,.h,.go,.html,.htm"
+        aria-label="Select source code file to upload"
         className="hidden"
         onChange={(e) => handleFile(e.target.files?.[0])}
         disabled={disabled}
@@ -71,8 +72,9 @@ export default function FileUpload({ onCodeLoaded, onFileNameChange, onLanguageD
       <div className="flex items-center justify-between gap-3">
         <button
           type="button"
-            disabled={disabled}
+          disabled={disabled}
           onClick={() => inputRef.current?.click()}
+          aria-label="Upload source file"
           className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-slate-600 bg-slate-950/60 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-cyan-400/60 hover:bg-cyan-400/5 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Upload size={17} />
@@ -83,6 +85,7 @@ export default function FileUpload({ onCodeLoaded, onFileNameChange, onLanguageD
           <button
             type="button"
             onClick={reset}
+            aria-label="Remove uploaded file"
             className="rounded-xl border border-slate-700 bg-slate-900 p-3 text-slate-400 hover:text-white"
             title="Remove file"
           >

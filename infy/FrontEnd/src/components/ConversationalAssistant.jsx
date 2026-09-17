@@ -223,7 +223,12 @@ export default function ConversationalAssistant({ analysisId, language = "python
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col border-l border-slate-700/80 bg-[#080e1a]/95 backdrop-blur-xl shadow-2xl transition-all duration-300">
+    <div
+      id="assistant-drawer"
+      role="region"
+      aria-label="Conversational Code Assistant"
+      className="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col border-l border-slate-700/80 bg-[#080e1a]/95 backdrop-blur-xl shadow-2xl transition-all duration-300 max-w-full sm:max-w-lg overflow-x-hidden"
+    >
       {/* Drawer Header */}
       <div className="flex items-center justify-between border-b border-slate-800/80 px-5 py-4 bg-slate-900/60">
         <div className="flex items-center gap-3">
@@ -246,6 +251,7 @@ export default function ConversationalAssistant({ analysisId, language = "python
             type="button"
             onClick={handleClear}
             title="Clear Chat"
+            aria-label="Clear chat messages"
             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition"
           >
             <Trash2 size={16} />
@@ -253,6 +259,7 @@ export default function ConversationalAssistant({ analysisId, language = "python
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close Assistant drawer"
             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition"
           >
             <X size={18} />
@@ -294,6 +301,7 @@ export default function ConversationalAssistant({ analysisId, language = "python
                   <button
                     type="button"
                     onClick={() => toggleSourceView(idx)}
+                    aria-label="Toggle RAG citations view"
                     className="flex w-full items-center justify-between text-[11px] font-semibold text-slate-400 hover:text-cyan-300"
                   >
                     <span className="flex items-center gap-1.5">
@@ -336,9 +344,9 @@ export default function ConversationalAssistant({ analysisId, language = "python
       </div>
 
       {/* Suggested Prompts */}
-      <div className="border-t border-slate-800/80 bg-slate-900/30 px-4 py-2">
+      <div className="border-t border-slate-800/80 bg-slate-900/30 px-4 py-2 max-w-full overflow-hidden">
         <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Suggested Questions</p>
-        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none max-w-full flex-nowrap">
           {(analysisId && analysisId !== "—" ? [
             "What are all findings in this file?",
             "How do I fix high severity issues?",
@@ -349,6 +357,7 @@ export default function ConversationalAssistant({ analysisId, language = "python
               key={pIdx}
               type="button"
               onClick={() => handleSend(prompt)}
+              aria-label={`Ask suggested question: ${prompt}`}
               className="shrink-0 rounded-lg border border-slate-700/60 bg-slate-800/40 px-2.5 py-1 text-[11px] text-slate-300 hover:border-cyan-400/40 hover:bg-cyan-500/10 hover:text-cyan-200 transition"
             >
               {prompt}
@@ -370,12 +379,14 @@ export default function ConversationalAssistant({ analysisId, language = "python
             type="text"
             value={inputQuery}
             onChange={(e) => setInputQuery(e.target.value)}
+            aria-label="Ask assistant a coding question"
             placeholder="Ask anything about flagged issues, fixes, OWASP rules..."
             className="flex-1 rounded-xl border border-slate-700/80 bg-slate-950 px-3.5 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
           />
           <button
             type="submit"
             disabled={!inputQuery.trim() || loading}
+            aria-label="Send message"
             className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Send size={15} />

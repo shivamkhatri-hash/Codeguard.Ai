@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Lock, Mail, User, ShieldCheck, Sparkles, AlertCircle, Eye, EyeOff, Code, Shield } from "lucide-react";
+import { X, Lock, Mail, User, ShieldCheck, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { loginUser, signupUser } from "../services/api";
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
@@ -37,20 +37,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     }
   };
 
-  const handleDemoFill = (type) => {
-    setError("");
-    setIsSignUp(false);
-    if (type === "admin") {
-      setEmail("admin@codeguard.ai");
-      setPassword("admin");
-    } else {
-      setEmail("sumit@codeguard.ai");
-      setPassword("password123");
-    }
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-xl animate-fadeIn">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="auth-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-xl animate-fadeIn"
+    >
       {/* Background Radial Glow */}
       <div className="pointer-events-none absolute h-96 w-96 rounded-full bg-cyan-500/10 blur-[120px]" />
 
@@ -62,6 +55,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         <button
           type="button"
           onClick={onClose}
+          aria-label="Close dialog"
           className="absolute right-4 top-4 rounded-xl p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition"
         >
           <X size={18} />
@@ -72,7 +66,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-cyan-300 via-blue-500 to-indigo-600 text-slate-950 shadow-glow">
             <ShieldCheck size={30} />
           </div>
-          <h3 className="text-2xl font-black text-white tracking-tight">
+          <h3 id="auth-modal-title" className="text-2xl font-black text-white tracking-tight">
             {isSignUp ? "Join CodeGuard AI" : "Welcome Back"}
           </h3>
           <p className="mt-1 text-xs text-slate-400">
@@ -113,36 +107,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           >
             Create Account
           </button>
-        </div>
-
-        {/* Demo Auto-Fill Shortcuts */}
-        <div className="mt-4 space-y-1.5">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">Quick Demo Login Shortcuts</p>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => handleDemoFill("dev")}
-              className="group flex flex-col items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-2.5 hover:bg-cyan-500/15 hover:border-cyan-400/40 transition text-left"
-            >
-              <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-300">
-                <Code size={13} />
-                <span>Developer</span>
-              </div>
-              <span className="text-[10px] font-mono text-slate-400 mt-0.5">sumit@codeguard.ai</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleDemoFill("admin")}
-              className="group flex flex-col items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-2.5 hover:bg-indigo-500/15 hover:border-indigo-400/40 transition text-left"
-            >
-              <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-300">
-                <Shield size={13} />
-                <span>Admin SOC</span>
-              </div>
-              <span className="text-[10px] font-mono text-slate-400 mt-0.5">admin@codeguard.ai</span>
-            </button>
-          </div>
         </div>
 
         {/* Error Alert */}
